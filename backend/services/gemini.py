@@ -22,10 +22,29 @@ async def get_gemini_response(user_input: str, fpl_data: dict) -> str:
     fixtures_data = fpl_data["fixtures"]
     injuries_data = fpl_data.get("injuries", [])
     
-    # Process injury data for the prompt
+    # Process injury data for the prompt - select from a variety of teams
+    # Group injuries by team first
+    injuries_by_team = {}
+    for injury in injuries_data:
+        team = injury['team']
+        if team not in injuries_by_team:
+            injuries_by_team[team] = []
+        injuries_by_team[team].append(injury)
+    
+    # Select 1-2 injuries from each team to ensure coverage across teams
     injury_lines = []
-    for injury in injuries_data[:10]:  # Limit to top 10 most relevant injuries
-        injury_lines.append(f"{injury['player']} ({injury['team']}) - {injury['status']}: {injury['news']}")
+    for team, team_injuries in injuries_by_team.items():
+        # Take up to 2 injuries per team, prioritizing more serious ones (status 'i')
+        serious_injuries = [i for i in team_injuries if i['status'] == 'i'][:1]
+        other_injuries = [i for i in team_injuries if i['status'] != 'i'][:1]
+        
+        selected_injuries = serious_injuries + other_injuries
+        for injury in selected_injuries:
+            injury_lines.append(f"{injury['player']} ({injury['team']}) - {injury['status']}: {injury['news']}")
+        
+        # Cap at 15 teams to keep the context manageable
+        if len(injury_lines) >= 20:
+            break
     
     injury_context = "\n".join(injury_lines)
     
@@ -165,10 +184,29 @@ async def rate_fpl_team(user_input: str, fpl_data: dict) -> str:
     injuries_data = fpl_data.get("injuries", [])
     teams_data = {team["id"]: team for team in bootstrap_data["teams"]}
     
-    # Process injury data for the prompt
+    # Process injury data for the prompt - select from a variety of teams
+    # Group injuries by team first
+    injuries_by_team = {}
+    for injury in injuries_data:
+        team = injury['team']
+        if team not in injuries_by_team:
+            injuries_by_team[team] = []
+        injuries_by_team[team].append(injury)
+    
+    # Select 1-2 injuries from each team to ensure coverage across teams
     injury_lines = []
-    for injury in injuries_data[:10]:  # Limit to top 10 most relevant injuries
-        injury_lines.append(f"{injury['player']} ({injury['team']}) - {injury['status']}: {injury['news']}")
+    for team, team_injuries in injuries_by_team.items():
+        # Take up to 2 injuries per team, prioritizing more serious ones (status 'i')
+        serious_injuries = [i for i in team_injuries if i['status'] == 'i'][:1]
+        other_injuries = [i for i in team_injuries if i['status'] != 'i'][:1]
+        
+        selected_injuries = serious_injuries + other_injuries
+        for injury in selected_injuries:
+            injury_lines.append(f"{injury['player']} ({injury['team']}) - {injury['status']}: {injury['news']}")
+        
+        # Cap at 15 teams to keep the context manageable
+        if len(injury_lines) >= 20:
+            break
     
     injury_context = "\n".join(injury_lines)
     
