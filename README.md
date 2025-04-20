@@ -1,11 +1,12 @@
-# ⚽ FPL AI Chatbot – Fullstack Project
+# ⚽ FPL AI Assistant – Fullstack Project
 
 An intelligent Fantasy Premier League assistant that combines live FPL data with Google's Gemini AI to provide strategic advice, player recommendations, and team insights.
 
 ## 🌟 Features
 
-- **Real-time FPL Data**: Connects to the official Fantasy Premier League API
-- **AI-Powered Recommendations**: Uses Google's Gemini Pro model
+- **Real-time FPL Data**: Connects to the official Fantasy Premier League API for player stats and fixtures
+- **AI-Powered Recommendations**: Uses Google's Gemini 1.5 Pro model
+- **Modern Dark UI**: Sleek, minimalist design with FPL-inspired accents
 - **Interactive Chat Interface**: User-friendly conversational UI
 - **Strategic Insights**: Get advice on transfers, captain picks, and team selection
 
@@ -13,7 +14,7 @@ An intelligent Fantasy Premier League assistant that combines live FPL data with
 
 - **Frontend**: React with Vite
 - **Backend**: FastAPI (Python)
-- **AI Engine**: Google Generative AI (Gemini Pro)
+- **AI Engine**: Google Generative AI (Gemini 1.5 Pro)
 - **API Integration**: FPL Official API
 
 ## 📋 Project Structure
@@ -107,6 +108,7 @@ fplai/
 ## 💬 Example Questions
 
 - "Who are the top 5 players by form right now?"
+- "Which team has the easiest fixtures in the next 2 gameweeks?"
 - "Who should I captain this week?"
 - "Is it worth taking a hit to bring in Haaland?"
 - "Best budget defenders under 4.5m?"
@@ -120,4 +122,5 @@ MIT
 
 - [Fantasy Premier League API](https://fantasy.premierleague.com/api/bootstrap-static/)
 - [Google Generative AI](https://ai.google.dev/)
-- Icons by [FontAwesome](https://fontawesome.com/)
+- [React](https://reactjs.org/)
+- [FastAPI](https://fastapi.tiangolo.com/)

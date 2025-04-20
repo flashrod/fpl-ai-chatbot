@@ -5,13 +5,13 @@ function App() {
   return (
     <div className="app-container">
       <header className="app-header">
-        <h1>⚽ FPL AI Chatbot</h1>
+        <h1><span className="soccer-icon">⚽</span> <span>FPL AI</span> Assistant</h1>
       </header>
       <main>
         <ChatBot />
       </main>
       <footer className="app-footer">
-        <p>Powered by Fantasy Premier League API + Gemini AI</p>
+        <p>Powered by <span>Fantasy Premier League API</span> + <span>Gemini AI</span></p>
       </footer>
     </div>
   )

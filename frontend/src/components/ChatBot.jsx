@@ -4,7 +4,10 @@ import './ChatBot.css'
 
 const ChatBot = () => {
   const [messages, setMessages] = useState([
-    { sender: 'bot', text: 'Hi there! I\'m your FPL assistant. How can I help with your Fantasy Premier League team today?' }
+    { 
+      sender: 'bot', 
+      text: 'Hi there! I\'m your FPL AI assistant powered by Premier League data. How can I help with your Fantasy Premier League team today?' 
+    }
   ])
   const [userInput, setUserInput] = useState('')
   const [isLoading, setIsLoading] = useState(false)
@@ -54,27 +57,39 @@ const ChatBot = () => {
     }
   }
 
+  // Message components
+  const renderMessages = () => {
+    return messages.map((msg, index) => (
+      <div key={index} className={`message ${msg.sender}`}>
+        <div className="message-content">
+          {msg.text}
+        </div>
+      </div>
+    ));
+  }
+
+  // Loading indicator
+  const renderLoadingIndicator = () => {
+    if (!isLoading) return null;
+    
+    return (
+      <div className="message bot">
+        <div className="message-content loading">
+          <div className="typing-indicator">
+            <span></span>
+            <span></span>
+            <span></span>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="chat-container">
       <div className="messages">
-        {messages.map((msg, index) => (
-          <div key={index} className={`message ${msg.sender}`}>
-            <div className="message-content">
-              {msg.text}
-            </div>
-          </div>
-        ))}
-        {isLoading && (
-          <div className="message bot">
-            <div className="message-content loading">
-              <div className="typing-indicator">
-                <span></span>
-                <span></span>
-                <span></span>
-              </div>
-            </div>
-          </div>
-        )}
+        {renderMessages()}
+        {renderLoadingIndicator()}
         <div ref={messagesEndRef} />
       </div>
       
@@ -84,7 +99,7 @@ const ChatBot = () => {
           value={userInput}
           onChange={(e) => setUserInput(e.target.value)}
           onKeyDown={handleKeyDown}
-          placeholder="Ask about FPL players, team selection, transfers..."
+          placeholder="Ask about players, fixtures, team selection..."
           disabled={isLoading}
         />
         <button 

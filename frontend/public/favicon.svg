@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64">
+  <!-- Dark background -->
+  <circle cx="32" cy="32" r="32" fill="#121212" />
+  <circle cx="32" cy="32" r="28" fill="#1e1e1e" />
+  
+  <!-- Gradient star shape -->
+  <defs>
+    <linearGradient id="greenGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#04c4a5" />
+      <stop offset="100%" style="stop-color:#07e2c9" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Star shape with gradient -->
+  <path d="M32 12 L38 25 L52 25 L41 34 L45 48 L32 40 L19 48 L23 34 L12 25 L26 25 Z" fill="url(#greenGradient)" />
+  
+  <!-- Center circle -->
+  <circle cx="32" cy="32" r="8" fill="#121212" />
+  <circle cx="32" cy="32" r="4" fill="url(#greenGradient)" />
+</svg> 
