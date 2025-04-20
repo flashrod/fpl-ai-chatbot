@@ -45,6 +45,39 @@
   font-size: 0.95rem;
   transform: scale(1);
   transition: transform 0.2s ease;
+  white-space: pre-line; /* Preserve line breaks */
+}
+
+/* Style for bullet points */
+.message-content ul {
+  padding-left: 1.2rem;
+  margin: 0.5rem 0;
+}
+
+.message-content li {
+  margin-bottom: 0.3rem;
+}
+
+/* Style for section headings within the response */
+.section-heading {
+  margin-top: 0.8rem;
+  margin-bottom: 0.4rem;
+  font-weight: 600;
+  color: var(--accent-color);
+  letter-spacing: 0.5px;
+  font-size: 1rem;
+  text-transform: uppercase;
+  font-size: 0.85rem;
+}
+
+/* First section heading shouldn't have top margin */
+.message-content .section-heading:first-child {
+  margin-top: 0;
+}
+
+/* Enhance bullet points in raw text */
+.message-content p {
+  margin-bottom: 0.5rem;
 }
 
 .message.user .message-content {
@@ -89,6 +122,35 @@
 
 .message-content:hover {
   transform: scale(1.01);
+}
+
+/* Style for bullet points in text */
+.bullet-point {
+  display: flex;
+  align-items: flex-start;
+  margin: 0.4rem 0;
+  line-height: 1.4;
+  position: relative;
+  padding-left: 1.2rem;
+}
+
+.bullet-point::before {
+  content: '•';
+  position: absolute;
+  left: 0;
+  color: var(--accent-color);
+  font-size: 1.2rem;
+  line-height: 1.2;
+}
+
+/* Add spacing between bullet point groups */
+.bullet-point + .section-heading {
+  margin-top: 1rem;
+}
+
+/* Add spacing after multiple bullet points */
+.bullet-point:last-of-type {
+  margin-bottom: 0.5rem;
 }
 
 .input-area {

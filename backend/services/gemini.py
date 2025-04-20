@@ -63,7 +63,16 @@ async def get_gemini_response(user_input: str, fpl_data: dict) -> str:
     prompt = f"""
 You are a Fantasy Premier League expert assistant. 
 
-Based on the latest data below, give tactical, position-specific, and useful recommendations in response to user questions.
+Based on the latest data below, give concise, tactical recommendations in response to user questions.
+
+FORMAT YOUR RESPONSE USING THESE RULES:
+1. Keep total response under 150 words
+2. Use bullet points for lists (• Item)
+3. Group information into categories with short headings
+4. Prioritize the most relevant 3-5 points only
+5. Use simple, direct language
+6. Avoid lengthy explanations
+7. Include only essential details
 
 --- TOP PLAYER DATA ---
 {player_context}
@@ -73,7 +82,7 @@ Based on the latest data below, give tactical, position-specific, and useful rec
 {fixture_context}
 -----------------------
 
-Now answer this question:
+Now answer this question concisely:
 {user_input}
 """.strip()
 
@@ -81,30 +90,24 @@ Now answer this question:
         response = model.generate_content(prompt)
         raw_text = response.text
         
-        # Remove markdown formatting
-        clean_text = clean_markdown(raw_text)
+        # Remove markdown formatting and post-process
+        clean_text = format_response(raw_text)
         return clean_text
     except Exception as e:
         # Detailed error with troubleshooting suggestions
         error_msg = f"Error from Gemini: {e}"
         error_msg += "\n\nTroubleshooting tips:"
-        error_msg += "\n1. Check if your API key is valid and has access to the Gemini models"
-        error_msg += "\n2. Verify that you're using the correct model name"
-        error_msg += "\n3. Ensure you have proper internet connectivity"
+        error_msg += "\n• Check your API key"
+        error_msg += "\n• Verify the model name"
+        error_msg += "\n• Check your internet connection"
         return error_msg
 
 def clean_markdown(text):
-    """
-    Remove common markdown formatting from text:
-    - Headers (# Header)
-    - Bold/Italic (**bold**, *italic*)
-    - Code blocks (```code```)
-    - Lists (- item or * item or 1. item)
-    - Links ([text](url))
-    - Etc.
-    """
-    # Replace headers
-    text = re.sub(r'^#+\s+', '', text, flags=re.MULTILINE)
+    """Remove common markdown formatting from text"""
+    # Replace headers but preserve as bold
+    text = re.sub(r'^#\s+(.*?)$', r'\1:', text, flags=re.MULTILINE)
+    text = re.sub(r'^##\s+(.*?)$', r'\1:', text, flags=re.MULTILINE)
+    text = re.sub(r'^###\s+(.*?)$', r'\1:', text, flags=re.MULTILINE)
     
     # Replace bold and italic
     text = re.sub(r'\*\*(.*?)\*\*', r'\1', text)  # Bold
@@ -116,7 +119,7 @@ def clean_markdown(text):
     text = re.sub(r'```(?:\w+)?\n(.*?)\n```', r'\1', text, flags=re.DOTALL)
     text = re.sub(r'`(.*?)`', r'\1', text)        # Inline code
     
-    # Clean up lists but keep the content
+    # Format lists consistently
     text = re.sub(r'^[\*\-]\s+', '• ', text, flags=re.MULTILINE)  # Bullet lists
     text = re.sub(r'^\d+\.\s+', '• ', text, flags=re.MULTILINE)   # Numbered lists
     
@@ -134,5 +137,32 @@ def clean_markdown(text):
     
     # Remove HTML tags if any
     text = re.sub(r'<[^>]+>', '', text)
+    
+    return text.strip()
+
+def format_response(text):
+    """Format the response into a cleaner, more concise structure"""
+    # First clean markdown
+    text = clean_markdown(text)
+    
+    # Ensure consistent bullet point format with proper spacing
+    text = re.sub(r'•\s*', '• ', text)
+    
+    # Ensure headings are properly formatted and stand out
+    text = re.sub(r'([A-Z][A-Za-z\s]+):', r'\n\1:', text)
+    
+    # Ensure good spacing between sections
+    text = re.sub(r':\n', ':\n\n', text)
+    text = re.sub(r'\n{3,}', '\n\n', text)
+    
+    # Fix any remaining formatting issues
+    text = text.replace('• •', '•')
+    text = text.replace('••', '•')
+    
+    # Ensure there's no excessive spacing
+    text = re.sub(r'\n\s+', '\n', text)
+    
+    # Ensure proper spacing after bullet points
+    text = re.sub(r'•(\S)', '• \1', text)
     
     return text.strip()

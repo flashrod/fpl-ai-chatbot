@@ -6,7 +6,7 @@ const ChatBot = () => {
   const [messages, setMessages] = useState([
     { 
       sender: 'bot', 
-      text: 'Hi there! I\'m your FPL AI assistant powered by Premier League data. How can I help with your Fantasy Premier League team today?' 
+      text: 'Hi there! I\'m your FPL AI assistant. How can I help with your team today?\n\nTry asking about:\n• Top performers\n• Upcoming fixtures\n• Captain recommendations' 
     }
   ])
   const [userInput, setUserInput] = useState('')
@@ -37,7 +37,7 @@ const ChatBot = () => {
       // Add bot response to chat
       setMessages([...newMessages, { 
         sender: 'bot', 
-        text: response.data.reply 
+        text: formatMessageText(response.data.reply)
       }])
     } catch (error) {
       console.error('Error getting response:', error)
@@ -50,6 +50,31 @@ const ChatBot = () => {
     }
   }
 
+  // Format message text for better display
+  const formatMessageText = (text) => {
+    return text.trim();
+  }
+
+  // Process message text before rendering
+  const processMessageText = (text) => {
+    // Find and transform headings
+    let processedText = text;
+    
+    // Format lines that start with "• " as bullet points with proper spacing
+    const bulletPointRegex = /^• (.+)$/gm;
+    processedText = processedText.replace(bulletPointRegex, (match, p1) => {
+      return `<div class="bullet-point">${p1}</div>`;
+    });
+
+    // Format lines that end with ":" as headings
+    const headingRegex = /^([A-Z][A-Za-z\s]+):/gm;
+    processedText = processedText.replace(headingRegex, (match, p1) => {
+      return `<div class="section-heading">${p1}</div>`;
+    });
+
+    return processedText;
+  };
+
   // Handle Enter key press
   const handleKeyDown = (e) => {
     if (e.key === 'Enter') {
@@ -57,12 +82,18 @@ const ChatBot = () => {
     }
   }
 
+  // Render message with HTML formatting
+  const renderMessageContent = (text) => {
+    const processedText = processMessageText(text);
+    return <div dangerouslySetInnerHTML={{ __html: processedText }} />;
+  };
+
   // Message components
   const renderMessages = () => {
     return messages.map((msg, index) => (
       <div key={index} className={`message ${msg.sender}`}>
         <div className="message-content">
-          {msg.text}
+          {renderMessageContent(msg.text)}
         </div>
       </div>
     ));
