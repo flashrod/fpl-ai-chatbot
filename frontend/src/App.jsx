@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import ChatBot from './components/ChatBot'
 import TeamRating from './components/TeamRating'
+import ChipCalculator from './components/ChipCalculator'
 import './App.css'
 
 function App() {
@@ -31,11 +32,18 @@ function App() {
         >
           <span className="tab-icon">🏆</span> Team Rating
         </button>
+        <button 
+          className={`tab-button ${activeTab === 'chip-calculator' ? 'active' : ''}`}
+          onClick={() => setActiveTab('chip-calculator')}
+        >
+          <span className="tab-icon">🔍</span> Chip Planner
+        </button>
       </div>
       
       <main>
         {activeTab === 'chat' && <ChatBot initialMessage={teamRatingResponse} />}
         {activeTab === 'team-rating' && <TeamRating onRatingReceived={handleTeamRatingReceived} />}
+        {activeTab === 'chip-calculator' && <ChipCalculator />}
       </main>
       
       <footer className="app-footer">

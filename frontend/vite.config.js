@@ -7,7 +7,21 @@ export default defineConfig({
   server: {
     port: 5173,
     proxy: {
-      '/chat': 'http://localhost:8000'
+      '/api/chat': {
+        target: 'http://localhost:8000',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api\/chat/, '/chat')
+      },
+      '/api/chips': {
+        target: 'http://localhost:8000',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api\/chips/, '/chips')
+      },
+      '/api/injuries': {
+        target: 'http://localhost:8000',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api\/injuries/, '/injuries')
+      }
     }
   }
 }) 
