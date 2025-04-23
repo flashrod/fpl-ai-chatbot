@@ -8,6 +8,7 @@ const ChipCalculator = () => {
   const [tripleCaptainRecommendations, setTripleCaptainRecommendations] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [lastUpdated, setLastUpdated] = useState(null);
 
   const fetchRecommendations = async () => {
     setLoading(true);
@@ -20,6 +21,12 @@ const ChipCalculator = () => {
       const data = await response.json();
       setBenchBoostRecommendations(data.bench_boost || []);
       setTripleCaptainRecommendations(data.triple_captain || []);
+      
+      // Set last updated timestamp
+      if (data.last_updated) {
+        const lastUpdatedDate = new Date(data.last_updated * 1000);
+        setLastUpdated(lastUpdatedDate.toLocaleString());
+      }
     } catch (err) {
       console.error('Error fetching recommendations:', err);
       setError(err.message);
@@ -46,6 +53,10 @@ const ChipCalculator = () => {
   };
 
   const renderFixtures = (teamData) => {
+    if (!teamData.fixture_details || teamData.fixture_details.length === 0) {
+      return <div className="no-fixtures">No upcoming fixtures</div>;
+    }
+    
     return (
       <div className="fixtures-container">
         {teamData.fixture_details.map((fixture, idx) => (
@@ -66,6 +77,45 @@ const ChipCalculator = () => {
         <div className="team-name">{teamData.name}</div>
         <div className="team-fixtures-label">Next fixtures:</div>
         {renderFixtures(teamData)}
+      </div>
+    );
+  };
+
+  const renderPlayerRecommendations = (players, position) => {
+    if (!players || players.length === 0) {
+      return <p>No {position} recommendations available</p>;
+    }
+
+    const positionColors = {
+      GK: 'position-gk',
+      DEF: 'position-def',
+      MID: 'position-mid',
+      FWD: 'position-fwd'
+    };
+
+    return (
+      <div className="position-group">
+        <h4 className={`position-title ${positionColors[position]}`}>{position}</h4>
+        <div className="position-players">
+          {players.map((player, index) => (
+            <div key={index} className="player-card">
+              <div className="player-name">{player.name}</div>
+              <div className="player-team">{player.team}</div>
+              <div className="player-stats">
+                <span className="player-stat">£{player.price.toFixed(1)}m</span>
+                <span className="player-stat">Form: {player.form.toFixed(1)}</span>
+                <span className="player-stat">Pts: {player.points}</span>
+              </div>
+              <div className="fixture-difficulty">
+                <span className="difficulty-label">Fixtures:</span>
+                <span className={`difficulty-value ${getDifficultyColor(Math.round(player.avg_fixture_difficulty))}`}>
+                  {player.fixtures_count > 1 ? `${player.fixtures_count}x` : ''} 
+                  Diff: {player.avg_fixture_difficulty.toFixed(1)}
+                </span>
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
     );
   };
@@ -101,21 +151,31 @@ const ChipCalculator = () => {
           </div>
         </div>
 
-        {recommendation.team_data && (
-          <div className="teams-section">
-            <h4 className="teams-title">Teams with Good Fixtures:</h4>
-            <div className="teams-grid">
-              {Object.values(recommendation.team_data)
-                .sort((a, b) => a.avg_difficulty - b.avg_difficulty)
-                .slice(0, 6)
-                .map((team, idx) => (
-                  <div key={idx} className="team-wrapper">
-                    {renderTeamCard(team)}
-                  </div>
-                ))}
+        {recommendation.recommended_players && (
+          <div className="player-recommendations">
+            <h4 className="recommendations-title">Recommended Players:</h4>
+            <div className="positions-container">
+              {renderPlayerRecommendations(recommendation.recommended_players.GK, 'GK')}
+              {renderPlayerRecommendations(recommendation.recommended_players.DEF, 'DEF')}
+              {renderPlayerRecommendations(recommendation.recommended_players.MID, 'MID')}
+              {renderPlayerRecommendations(recommendation.recommended_players.FWD, 'FWD')}
             </div>
           </div>
         )}
+
+        <div className="teams-section">
+          <h4 className="teams-title">Teams with Good Fixtures:</h4>
+          <div className="teams-grid">
+            {Object.values(recommendation.team_data)
+              .sort((a, b) => a.avg_difficulty - b.avg_difficulty)
+              .slice(0, 6)
+              .map((team, idx) => (
+                <div key={idx} className="team-wrapper">
+                  {renderTeamCard(team)}
+                </div>
+              ))}
+          </div>
+        </div>
       </div>
     );
   };
@@ -158,6 +218,12 @@ const ChipCalculator = () => {
           )}
         </button>
       </div>
+
+      {lastUpdated && (
+        <div className="last-updated">
+          Data last updated: {lastUpdated}
+        </div>
+      )}
 
       {error && <div className="error-message">{error}</div>}
 

@@ -55,39 +55,124 @@ async def get_gemini_response(user_input: str, fpl_data: dict) -> str:
     def is_player_injured(player):
         return any(p["id"] == player["id"] for p in injuries_data)
     
-    # Rank top players but exclude injured players
+    # Get available (not injured) players
     available_players = [p for p in bootstrap_data["elements"] if not is_player_injured(p)]
-    top_players = sorted(
-        available_players, 
-        key=lambda x: x["total_points"], 
-        reverse=True
-    )[:10]
-
-    player_lines = []
-    for p in top_players:
-        try:
-            name = p["web_name"]
-            # Handle element_type more robustly
-            element_type = p["element_type"]
-            position_map = {1: "GK", 2: "DEF", 3: "MID", 4: "FWD"}
-            pos = position_map.get(element_type, "UNK")  # Default to "UNK" if element_type is not recognized
-            
-            pts = p["total_points"]
-            form = p["form"]
-            team_id = p["team"]
-            team_name = teams.get(team_id, "Unknown")
-            player_lines.append(f"{name} ({team_name}) - {pos}, {pts} pts, form: {form}")
-        except Exception as e:
-            # Skip players that cause errors
-            continue
-
-    # Process upcoming fixtures (next 2 gameweeks)
+    
+    # Create position mappings
+    position_map = {1: "GK", 2: "DEF", 3: "MID", 4: "FWD"}
+    
+    # Get current gameweek
     current_gameweek = next(
         (gw for gw in bootstrap_data["events"] if gw["is_current"]), 
         bootstrap_data["events"][0]
     )
     current_gw_id = current_gameweek["id"]
     
+    # Get upcoming fixtures for this gameweek
+    current_fixtures = [
+        f for f in fixtures_data 
+        if f["event"] is not None and f["event"] == current_gw_id
+    ]
+    
+    # Calculate fixture difficulty for each team
+    team_difficulty = {}
+    for fixture in current_fixtures:
+        home_team = fixture["team_h"]
+        away_team = fixture["team_a"]
+        
+        # Lower difficulty is better for the team
+        if home_team not in team_difficulty:
+            team_difficulty[home_team] = []
+        team_difficulty[home_team].append(fixture["team_a_difficulty"])
+        
+        if away_team not in team_difficulty:
+            team_difficulty[away_team] = []
+        team_difficulty[away_team].append(fixture["team_h_difficulty"])
+    
+    # Average difficulty per team
+    avg_difficulty = {}
+    for team_id, difficulties in team_difficulty.items():
+        avg_difficulty[team_id] = sum(difficulties) / len(difficulties)
+    
+    # Function to calculate player score based on form, fixture difficulty and minutes
+    def calculate_player_score(player):
+        team_id = player["team"]
+        fixture_diff = avg_difficulty.get(team_id, 3)  # Default to medium if not found
+        form = float(player["form"]) if player["form"] and player["form"] != "-" else 0
+        minutes = player["minutes"]
+        points = player["total_points"]
+        
+        # Skip players with very low minutes
+        if minutes < 300:  # Less than ~3 full games
+            return -1
+            
+        # Calculate composite score
+        return (
+            form * 3 +                          # Form is important
+            (5 - fixture_diff) * 0.5 +          # Easier fixtures are better (5 is max difficulty)
+            points / 30                         # Total points shows consistency
+        )
+    
+    # Get player recommendations by position
+    player_recommendations = {}
+    
+    for pos_id, pos_name in position_map.items():
+        # Filter players by position
+        pos_players = [p for p in available_players if p["element_type"] == pos_id]
+        
+        # Calculate score for each player
+        scored_players = []
+        for player in pos_players:
+            score = calculate_player_score(player)
+            if score > 0:  # Skip players with negative scores (low minutes)
+                scored_players.append((player, score))
+        
+        # Sort by score
+        sorted_players = sorted(scored_players, key=lambda x: x[1], reverse=True)
+        
+        # Get top players
+        top_players = []
+        for player, score in sorted_players[:7]:  # Get top 7 players per position
+            name = player["web_name"]
+            team_id = player["team"]
+            team_name = teams.get(team_id, "Unknown")
+            form = float(player["form"]) if player["form"] and player["form"] != "-" else 0
+            points = player["total_points"]
+            fixture_diff = avg_difficulty.get(team_id, 3)
+            price = player["now_cost"] / 10.0
+            
+            # Get opponent for context
+            opponent = "Unknown"
+            is_home = False
+            for fixture in current_fixtures:
+                if fixture["team_h"] == team_id:
+                    opponent = teams.get(fixture["team_a"], "Unknown")
+                    is_home = True
+                    break
+                elif fixture["team_a"] == team_id:
+                    opponent = teams.get(fixture["team_h"], "Unknown")
+                    is_home = False
+                    break
+            
+            fixture_text = f"vs {opponent}" if is_home else f"at {opponent}"
+            
+            top_players.append(f"{name} ({team_name}): Form {form:.1f}, £{price:.1f}m, {points} pts, {fixture_text}")
+        
+        player_recommendations[pos_name] = top_players
+    
+    # Format player recommendations by position
+    player_sections = []
+    for pos_name, players in player_recommendations.items():
+        section = f"--- TOP {pos_name} PLAYERS ---\n"
+        if players:
+            section += "\n".join(players)
+        else:
+            section += "(No recommendations available)"
+        player_sections.append(section)
+    
+    player_context = "\n\n".join(player_sections)
+    
+    # Process upcoming fixtures (next 2 gameweeks)
     upcoming_fixtures = [
         f for f in fixtures_data 
         if f["event"] is not None and f["event"] in [current_gw_id, current_gw_id + 1]
@@ -102,7 +187,6 @@ async def get_gemini_response(user_input: str, fpl_data: dict) -> str:
         
         fixture_lines.append(f"GW{gameweek}: {home_team} vs {away_team} - {kickoff_time}")
     
-    player_context = "\n".join(player_lines)
     fixture_context = "\n".join(fixture_lines)
 
     prompt = f"""
@@ -111,16 +195,16 @@ You are a Fantasy Premier League expert assistant.
 Based on the latest data below, give concise, tactical recommendations in response to user questions.
 
 FORMAT YOUR RESPONSE USING THESE RULES:
-1. Keep total response under 150 words
+1. Keep total response under 200 words
 2. Use bullet points for lists (• Item)
 3. Group information into categories with short headings
 4. Prioritize the most relevant 3-5 points only
 5. Use simple, direct language
 6. Avoid lengthy explanations
 7. Include only essential details
-8. Do not recommend injured players
+8. Always provide recommendations for ALL positions (GK, DEF, MID, FWD)
+9. Do not recommend injured players
 
---- TOP PLAYER DATA ---
 {player_context}
 -----------------------
 
