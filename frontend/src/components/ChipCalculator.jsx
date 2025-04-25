@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { FaSpinner } from 'react-icons/fa';
-import './ChipCalculator.css'; // Add CSS import
+import { motion, AnimatePresence } from 'framer-motion';
+import { FaSpinner, FaSync, FaChartLine, FaRegCalendarAlt, FaExclamationTriangle } from 'react-icons/fa';
+import { useScrollAnimation, scrollAnimationVariants } from '../hooks/useScrollAnimation';
+import LoadingAnimation from './LoadingAnimation';
+import './ChipCalculator.css';
 
 const ChipCalculator = () => {
   const [selectedGameweek, setSelectedGameweek] = useState(1);
@@ -9,6 +12,71 @@ const ChipCalculator = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [lastUpdated, setLastUpdated] = useState(null);
+  const [nextUpdateTime, setNextUpdateTime] = useState(null);
+  const [timeUntilNextUpdate, setTimeUntilNextUpdate] = useState(null);
+  const [autoUpdateEnabled, setAutoUpdateEnabled] = useState(false);
+
+  // Animation refs
+  const { ref: headerRef, controls: headerControls } = useScrollAnimation();
+  const { ref: controlsRef, controls: controlsControls } = useScrollAnimation();
+  const { ref: bbRef, controls: bbControls } = useScrollAnimation();
+  const { ref: tcRef, controls: tcControls } = useScrollAnimation();
+
+  // Format the remaining time until next update
+  const formatTimeRemaining = (timeInSeconds) => {
+    if (timeInSeconds <= 0) return 'Updating soon...';
+    
+    const hours = Math.floor(timeInSeconds / 3600);
+    const minutes = Math.floor((timeInSeconds % 3600) / 60);
+    
+    if (hours > 0) {
+      return `${hours}h ${minutes}m`;
+    } else {
+      return `${minutes}m`;
+    }
+  };
+
+  // Update the countdown timer every minute
+  useEffect(() => {
+    if (!nextUpdateTime) return;
+    
+    const updateTimer = () => {
+      const now = new Date();
+      const nextUpdate = new Date(nextUpdateTime);
+      const timeDiff = Math.floor((nextUpdate - now) / 1000);
+      setTimeUntilNextUpdate(formatTimeRemaining(timeDiff > 0 ? timeDiff : 0));
+    };
+    
+    // Initial update
+    updateTimer();
+    
+    // Set interval to update every minute
+    const interval = setInterval(updateTimer, 60000);
+    
+    return () => clearInterval(interval);
+  }, [nextUpdateTime]);
+  
+  // Timer to auto refresh data when needed
+  useEffect(() => {
+    if (!autoUpdateEnabled || !nextUpdateTime) return;
+    
+    // Calculate milliseconds until next refresh
+    const nextRefresh = new Date(nextUpdateTime);
+    const now = new Date();
+    const msUntilRefresh = Math.max(0, nextRefresh - now);
+    
+    // Set timeout to refresh when the time comes
+    const refreshTimeout = setTimeout(() => {
+      fetchRecommendations();
+    }, msUntilRefresh);
+    
+    return () => clearTimeout(refreshTimeout);
+  }, [autoUpdateEnabled, nextUpdateTime]);
+
+  // Auto-fetch recommendations on first render
+  useEffect(() => {
+    fetchRecommendations();
+  }, []);
 
   const fetchRecommendations = async () => {
     setLoading(true);
@@ -22,11 +90,18 @@ const ChipCalculator = () => {
       setBenchBoostRecommendations(data.bench_boost || []);
       setTripleCaptainRecommendations(data.triple_captain || []);
       
-      // Set last updated timestamp
+      // Set last updated timestamp and next refresh information
       if (data.last_updated) {
         const lastUpdatedDate = new Date(data.last_updated * 1000);
         setLastUpdated(lastUpdatedDate.toLocaleString());
       }
+      
+      if (data.next_refresh) {
+        const nextRefreshDate = new Date(data.next_refresh * 1000);
+        setNextUpdateTime(nextRefreshDate.toLocaleString());
+      }
+      
+      setAutoUpdateEnabled(data.auto_update_enabled || false);
     } catch (err) {
       console.error('Error fetching recommendations:', err);
       setError(err.message);
@@ -60,12 +135,18 @@ const ChipCalculator = () => {
     return (
       <div className="fixtures-container">
         {teamData.fixture_details.map((fixture, idx) => (
-          <div key={idx} className="fixture-item">
+          <motion.div
+            key={idx}
+            className="fixture-item glass-effect"
+            initial={{ opacity: 0, scale: 0.9, y: 5 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            transition={{ duration: 0.2, delay: idx * 0.05 }}
+          >
             <span className={`fixture-difficulty-indicator ${getDifficultyColor(fixture.difficulty)}`}></span>
             <span className="fixture-opponent">
               {fixture.is_home ? '' : '@'}{fixture.opponent}
             </span>
-          </div>
+          </motion.div>
         ))}
       </div>
     );
@@ -73,98 +154,69 @@ const ChipCalculator = () => {
 
   const renderTeamCard = (teamData) => {
     return (
-      <div className="team-card">
+      <motion.div 
+        className="team-card card"
+        whileHover={{ y: -5, boxShadow: 'var(--shadow-lg)' }}
+        transition={{ duration: 0.2 }}
+      >
         <div className="team-name">{teamData.name}</div>
         <div className="team-fixtures-label">Next fixtures:</div>
         {renderFixtures(teamData)}
-      </div>
-    );
-  };
-
-  const renderPlayerRecommendations = (players, position) => {
-    if (!players || players.length === 0) {
-      return <p>No {position} recommendations available</p>;
-    }
-
-    const positionColors = {
-      GK: 'position-gk',
-      DEF: 'position-def',
-      MID: 'position-mid',
-      FWD: 'position-fwd'
-    };
-
-    return (
-      <div className="position-group">
-        <h4 className={`position-title ${positionColors[position]}`}>{position}</h4>
-        <div className="position-players">
-          {players.map((player, index) => (
-            <div key={index} className="player-card">
-              <div className="player-name">{player.name}</div>
-              <div className="player-team">{player.team}</div>
-              <div className="player-stats">
-                <span className="player-stat">£{player.price.toFixed(1)}m</span>
-                <span className="player-stat">Form: {player.form.toFixed(1)}</span>
-                <span className="player-stat">Pts: {player.points}</span>
-              </div>
-              <div className="fixture-difficulty">
-                <span className="difficulty-label">Fixtures:</span>
-                <span className={`difficulty-value ${getDifficultyColor(Math.round(player.avg_fixture_difficulty))}`}>
-                  {player.fixtures_count > 1 ? `${player.fixtures_count}x` : ''} 
-                  Diff: {player.avg_fixture_difficulty.toFixed(1)}
-                </span>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
+      </motion.div>
     );
   };
 
   const renderRecommendation = (recommendation, index, chipType) => {
+    const isTripleCaptain = chipType === 'triple_captain';
+    
     return (
-      <div className="recommendation-card" key={`${chipType}-${index}`}>
+      <motion.div 
+        className="recommendation-card card"
+        key={`${chipType}-${index}`}
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4, delay: index * 0.1 }}
+        whileHover={{ y: -5 }}
+      >
         <div className="recommendation-header">
-          <h3 className="recommendation-title">{chipType === 'bench_boost' ? 'Bench Boost' : 'Triple Captain'}</h3>
-          <span className="recommendation-gameweek">Gameweek {recommendation.gameweek}</span>
+          <h3 className="recommendation-title">
+            {isTripleCaptain ? (
+              <span className="title-icon">👑 Triple Captain</span>
+            ) : (
+              <span className="title-icon">🔄 Bench Boost</span>
+            )}
+          </h3>
+          <span className="recommendation-gameweek">
+            <FaRegCalendarAlt className="gw-icon" /> Gameweek {recommendation.gameweek}
+          </span>
         </div>
         
         <div className="recommendation-reasoning">
           <p className="recommendation-text">
-            {chipType === 'bench_boost' 
-              ? `Good Bench Boost opportunity with ${recommendation.teams_with_multiple_fixtures} teams having multiple fixtures.` 
-              : `Good Triple Captain opportunity with favorable fixtures.`}
+            {isTripleCaptain 
+              ? <span>Good Triple Captain opportunity with favorable fixtures.</span>
+              : <span>Good Bench Boost opportunity with <strong className="highlight">{recommendation.teams_with_multiple_fixtures} teams</strong> having multiple fixtures.</span>
+            }
           </p>
-          <p className="recommendation-text">Average fixture difficulty: {recommendation.avg_fixture_difficulty.toFixed(1)}</p>
-        </div>
-
-        <div className="recommended-players-section">
-          <h4 className="recommended-players-title">Teams with Multiple Fixtures:</h4>
-          <div className="players-list">
-            {Object.values(recommendation.team_data)
-              .filter(team => team.fixtures_count > 1)
-              .map((team, idx) => (
-                <div key={idx} className="player-item">
-                  <span className="player-name">{team.name}</span>
-                  <span className="player-team">({team.fixtures_count} fixtures)</span>
-                </div>
-              ))}
-          </div>
-        </div>
-
-        {recommendation.recommended_players && (
-          <div className="player-recommendations">
-            <h4 className="recommendations-title">Recommended Players:</h4>
-            <div className="positions-container">
-              {renderPlayerRecommendations(recommendation.recommended_players.GK, 'GK')}
-              {renderPlayerRecommendations(recommendation.recommended_players.DEF, 'DEF')}
-              {renderPlayerRecommendations(recommendation.recommended_players.MID, 'MID')}
-              {renderPlayerRecommendations(recommendation.recommended_players.FWD, 'FWD')}
+          <div className="recommendation-metrics">
+            <div className="metric">
+              <FaChartLine className="metric-icon" />
+              <span>Avg. difficulty: <strong>{recommendation.avg_fixture_difficulty.toFixed(1)}</strong></span>
             </div>
           </div>
-        )}
+        </div>
 
-        <div className="teams-section">
-          <h4 className="teams-title">Teams with Good Fixtures:</h4>
+        <motion.div 
+          className="teams-section"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.2 }}
+        >
+          <h4 className="teams-title">
+            {chipType === 'bench_boost' 
+              ? 'Teams with Multiple Fixtures:'
+              : 'Recommended Teams:'}
+          </h4>
           <div className="teams-grid">
             {Object.values(recommendation.team_data)
               .sort((a, b) => a.avg_difficulty - b.avg_difficulty)
@@ -175,19 +227,34 @@ const ChipCalculator = () => {
                 </div>
               ))}
           </div>
-        </div>
-      </div>
+        </motion.div>
+      </motion.div>
     );
   };
 
   return (
     <div className="chip-calculator-container">
-      <h2 className="calculator-title">FPL Chip Strategy Calculator</h2>
-      <p className="calculator-description">
-        Get recommendations on when to use your FPL chips based on fixture difficulty and team form.
-      </p>
+      <motion.div
+        ref={headerRef}
+        initial="hidden"
+        animate={headerControls}
+        variants={scrollAnimationVariants.slideUp}
+        className="calculator-header"
+      >
+        <h2 className="calculator-title">FPL Chip Strategy Calculator</h2>
+        <p className="calculator-description">
+          Get data-driven recommendations on when to use your FPL chips based on fixture difficulty and team form.
+          <span className="auto-update-badge">Auto-refresh every 24h</span>
+        </p>
+      </motion.div>
 
-      <div className="calculator-controls">
+      <motion.div 
+        ref={controlsRef}
+        initial="hidden"
+        animate={controlsControls}
+        variants={scrollAnimationVariants.fadeIn}
+        className="calculator-controls glass-effect"
+      >
         <div className="gameweek-selector">
           <label htmlFor="gameweek" className="gameweek-label">Starting from Gameweek:</label>
           <select
@@ -204,51 +271,108 @@ const ChipCalculator = () => {
           </select>
         </div>
 
-        <button 
-          className="calculator-button" 
+        <motion.button 
+          className="calculator-button btn-primary" 
           onClick={fetchRecommendations}
           disabled={loading}
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
         >
           {loading ? (
             <span className="loading-indicator">
-              <FaSpinner className="spinner-icon" /> Loading...
+              <LoadingAnimation size={24} /> Loading...
             </span>
           ) : (
             'Calculate Chip Strategy'
           )}
-        </button>
-      </div>
+        </motion.button>
+      </motion.div>
 
       {lastUpdated && (
-        <div className="last-updated">
-          Data last updated: {lastUpdated}
-        </div>
+        <motion.div 
+          className="data-update-info glass-effect"
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3 }}
+        >
+          <div className="last-updated">
+            <span className="update-label">Data updated:</span> {lastUpdated}
+          </div>
+          {autoUpdateEnabled && timeUntilNextUpdate && (
+            <div className="next-update">
+              <motion.span
+                animate={{ rotate: [0, 360] }}
+                transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+                style={{ display: 'inline-block' }}
+              >
+                <FaSync className="sync-icon" />
+              </motion.span>
+              <span className="update-label">Next refresh in:</span> {timeUntilNextUpdate}
+            </div>
+          )}
+        </motion.div>
       )}
 
-      {error && <div className="error-message">{error}</div>}
+      {error && (
+        <motion.div 
+          className="error-message"
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ type: "spring", stiffness: 500, damping: 15 }}
+        >
+          <FaExclamationTriangle /> {error}
+        </motion.div>
+      )}
 
       <div className="recommendations-container">
         {(benchBoostRecommendations.length > 0 || tripleCaptainRecommendations.length > 0) ? (
           <>
-            <h3>Bench Boost Recommendations</h3>
-            <div className="recommendations-grid">
-              {benchBoostRecommendations.map((rec, index) => renderRecommendation(rec, index, 'bench_boost'))}
-            </div>
+            <motion.div
+              ref={bbRef}
+              initial="hidden"
+              animate={bbControls}
+              variants={scrollAnimationVariants.slideInLeft}
+            >
+              <h3 className="section-heading">Bench Boost Recommendations</h3>
+              <div className="recommendations-grid">
+                {benchBoostRecommendations.map((rec, index) => renderRecommendation(rec, index, 'bench_boost'))}
+              </div>
+            </motion.div>
             
-            <h3 className="mt-6">Triple Captain Recommendations</h3>
-            <div className="recommendations-grid">
-              {tripleCaptainRecommendations.map((rec, index) => renderRecommendation(rec, index, 'triple_captain'))}
-            </div>
+            <motion.div
+              ref={tcRef}
+              initial="hidden"
+              animate={tcControls}
+              variants={scrollAnimationVariants.slideInRight}
+              className="mt-6"
+            >
+              <h3 className="section-heading">Triple Captain Recommendations</h3>
+              <div className="recommendations-grid">
+                {tripleCaptainRecommendations.map((rec, index) => renderRecommendation(rec, index, 'triple_captain'))}
+              </div>
+            </motion.div>
           </>
         ) : !loading && (
-          <div className="no-recommendations-message">
-            No recommendations yet. Select a gameweek and calculate to see chip strategy recommendations.
-          </div>
+          <motion.div 
+            className="no-recommendations-message"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.5 }}
+          >
+            <div className="message-content">
+              <p>No recommendations yet. Select a gameweek and calculate to see chip strategy recommendations.</p>
+            </div>
+          </motion.div>
         )}
       </div>
 
-      <div className="difficulty-legend">
-        <h4 className="legend-title">Fixture Difficulty:</h4>
+      <motion.div 
+        className="difficulty-legend card"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.6 }}
+      >
+        <h4 className="legend-title">Fixture Difficulty Guide:</h4>
         <div className="legend-items">
           {[1, 2, 3, 4, 5].map((difficulty) => (
             <div key={difficulty} className="legend-item">
@@ -263,7 +387,7 @@ const ChipCalculator = () => {
             </div>
           ))}
         </div>
-      </div>
+      </motion.div>
     </div>
   );
 };

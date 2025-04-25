@@ -1,277 +1,398 @@
 /* The majority of styling is done directly in the component using Tailwind CSS classes */
 /* This file contains only additional styling that can't be easily achieved with Tailwind */
 
+/* Main container */
 .chip-calculator-container {
-  background-color: #f9fafb;
-  padding: 1.5rem;
-  border-radius: 0.5rem;
-  max-width: 1200px;
-  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  width: 100%;
+  animation: fadeIn 0.5s ease forwards;
+}
+
+.calculator-header {
+  text-align: center;
+  margin-bottom: 0.5rem;
 }
 
 .calculator-title {
-  font-size: 1.5rem;
-  font-weight: 700;
+  font-size: 2rem;
   margin-bottom: 0.5rem;
-  color: #1f2937;
+  background: var(--accent-gradient);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  display: inline-block;
 }
 
 .calculator-description {
-  color: #6b7280;
-  margin-bottom: 1.5rem;
+  color: var(--text-color-secondary);
+  max-width: 700px;
+  margin: 0 auto 1rem;
+  line-height: 1.6;
+  font-size: 1.05rem;
 }
 
+.auto-update-badge {
+  display: inline-block;
+  font-size: 0.75rem;
+  background-color: var(--accent-color-primary);
+  color: #000;
+  padding: 0.2rem 0.8rem;
+  border-radius: 9999px;
+  margin-left: 0.75rem;
+  font-weight: 600;
+  vertical-align: middle;
+  box-shadow: 0 2px 8px rgba(5, 211, 177, 0.3);
+}
+
+/* Controls section */
 .calculator-controls {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 1.5rem;
-  flex-wrap: wrap;
-  gap: 1rem;
+  padding: 1.25rem;
+  border-radius: var(--border-radius-lg);
+  background: rgba(30, 30, 30, 0.5);
+  margin-bottom: 1rem;
 }
 
 .gameweek-selector {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.75rem;
 }
 
 .gameweek-label {
   font-weight: 500;
-  color: #374151;
+  color: var(--text-color);
 }
 
 .gameweek-dropdown {
-  padding: 0.5rem;
-  border: 1px solid #d1d5db;
-  border-radius: 0.375rem;
-  background-color: white;
-  color: #1f2937;
+  padding: 0.5rem 1rem;
+  border-radius: var(--border-radius);
+  background-color: var(--input-bg);
+  color: var(--text-color);
+  border: 1px solid var(--input-border);
+  outline: none;
+  min-width: 100px;
+  transition: all var(--transition-fast);
+}
+
+.gameweek-dropdown:focus {
+  border-color: var(--accent-color-primary);
+  box-shadow: 0 0 0 2px rgba(5, 211, 177, 0.2);
 }
 
 .calculator-button {
-  padding: 0.5rem 1rem;
-  background-color: #2563eb;
-  color: white;
-  font-weight: 500;
-  border-radius: 0.375rem;
-  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: var(--border-radius);
+  color: #000;
+  font-weight: 600;
   cursor: pointer;
-  transition: background-color 0.2s;
+  transition: all var(--transition-fast);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  border: none;
 }
 
-.calculator-button:hover {
-  background-color: #1d4ed8;
+.calculator-button:hover:not(:disabled) {
+  background-color: #04c3a6;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(5, 211, 177, 0.4);
 }
 
 .calculator-button:disabled {
-  background-color: #9ca3af;
+  opacity: 0.7;
   cursor: not-allowed;
 }
 
 .loading-indicator {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 8px;
 }
 
 .spinner-icon {
   animation: spin 1s linear infinite;
 }
 
-@keyframes spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
+/* Data update info */
+.data-update-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem 1rem;
+  background-color: rgba(35, 35, 35, 0.5);
+  border-radius: var(--border-radius);
+  font-size: 0.85rem;
+  color: var(--text-color-secondary);
+  margin-bottom: 1rem;
 }
 
+.last-updated, .next-update {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--text-color-secondary);
+}
+
+.update-label {
+  font-weight: 500;
+  color: var(--text-color);
+}
+
+.sync-icon {
+  color: var(--accent-color-primary);
+  font-size: 0.9rem;
+  margin-right: 0.25rem;
+}
+
+/* Error message */
 .error-message {
-  background-color: #fee2e2;
-  border-left: 4px solid #ef4444;
-  color: #b91c1c;
-  padding: 1rem;
-  margin-bottom: 1.5rem;
-  border-radius: 0.25rem;
+  padding: 0.75rem 1rem;
+  background-color: rgba(220, 53, 69, 0.1);
+  color: #ff6b81;
+  border-radius: var(--border-radius);
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  border-left: 3px solid #ff6b81;
 }
 
+/* Recommendations section */
 .recommendations-container {
-  margin-bottom: 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.section-heading {
+  font-size: 1.5rem;
+  margin-bottom: 1rem;
+  color: var(--text-color);
+  position: relative;
+  padding-left: 1rem;
+}
+
+.section-heading::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0.2em;
+  bottom: 0.2em;
+  width: 4px;
+  background: var(--accent-gradient);
+  border-radius: 2px;
 }
 
 .recommendations-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: 1rem;
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  gap: 1.5rem;
 }
 
 .recommendation-card {
-  background-color: white;
-  border-radius: 0.5rem;
-  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
-  padding: 1rem;
+  background-color: var(--surface-bg);
+  border-radius: var(--border-radius-lg);
+  overflow: hidden;
+  transition: transform var(--transition-normal), box-shadow var(--transition-normal);
   display: flex;
   flex-direction: column;
+  box-shadow: var(--shadow);
+  border: 1px solid rgba(70, 70, 70, 0.2);
 }
 
 .recommendation-header {
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid rgba(80, 80, 80, 0.2);
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 0.75rem;
+  background-color: rgba(45, 45, 45, 0.5);
 }
 
 .recommendation-title {
-  font-size: 1.125rem;
-  font-weight: 700;
-}
-
-.recommendation-gameweek {
-  font-size: 0.875rem;
-  color: #6b7280;
-}
-
-.recommendation-reasoning {
-  margin-bottom: 1rem;
-}
-
-.recommendation-text {
-  font-size: 0.875rem;
-  color: #4b5563;
-}
-
-.recommended-players-section {
-  margin-bottom: 1rem;
-}
-
-.recommended-players-title {
-  font-size: 0.875rem;
-  font-weight: 600;
-  margin-bottom: 0.5rem;
-}
-
-.players-list {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-
-.player-item {
+  font-size: 1.2rem;
+  margin: 0;
+  color: var(--text-color);
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  font-size: 0.875rem;
 }
 
-.player-name {
-  font-weight: 500;
+.title-icon {
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
-.player-team {
-  color: #6b7280;
+.recommendation-gameweek {
+  font-size: 0.9rem;
+  color: var(--text-color-secondary);
+  background-color: rgba(35, 35, 35, 0.7);
+  padding: 0.35rem 0.75rem;
+  border-radius: 50px;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
 }
 
-.player-position {
-  background-color: #e5e7eb;
-  padding: 0.125rem 0.375rem;
-  border-radius: 0.25rem;
-  font-size: 0.75rem;
+.gw-icon {
+  font-size: 0.8rem;
+  color: var(--accent-color-primary);
+}
+
+.recommendation-reasoning {
+  padding: 1.25rem;
+  border-bottom: 1px solid rgba(80, 80, 80, 0.1);
+}
+
+.recommendation-text {
+  margin-bottom: 0.75rem;
+  color: var(--text-color-secondary);
+  line-height: 1.5;
+}
+
+.highlight {
+  color: var(--accent-color-primary);
+  font-weight: 600;
+}
+
+.recommendation-metrics {
+  display: flex;
+  gap: 1.25rem;
+  margin-top: 0.75rem;
+}
+
+.metric {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.9rem;
+  color: var(--text-color-secondary);
+}
+
+.metric-icon {
+  color: var(--accent-color-primary);
+}
+
+.metric strong {
+  color: var(--text-color);
+  margin-left: 0.25rem;
 }
 
 .teams-section {
-  margin-top: 1rem;
+  padding: 1.25rem;
 }
 
 .teams-title {
-  font-size: 0.875rem;
-  font-weight: 600;
-  margin-bottom: 0.5rem;
+  font-size: 1rem;
+  margin-bottom: 1rem;
+  color: var(--text-color);
 }
 
 .teams-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
-  gap: 0.5rem;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 1rem;
 }
 
 .team-card {
-  border: 1px solid #e5e7eb;
-  border-radius: 0.375rem;
-  padding: 0.5rem;
+  background-color: rgba(45, 45, 45, 0.5);
+  border-radius: var(--border-radius);
+  padding: 0.75rem;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid rgba(80, 80, 80, 0.1);
 }
 
 .team-name {
-  font-weight: 500;
-  margin-bottom: 0.25rem;
+  font-weight: 600;
+  color: var(--text-color);
+  margin-bottom: 0.5rem;
 }
 
 .team-fixtures-label {
-  font-size: 0.75rem;
-  color: #6b7280;
-  margin-bottom: 0.25rem;
+  font-size: 0.8rem;
+  color: var(--text-color-secondary);
+  margin-bottom: 0.5rem;
 }
 
 .fixtures-container {
   display: flex;
   flex-direction: column;
-  gap: 0.25rem;
+  gap: 0.35rem;
 }
 
 .fixture-item {
   display: flex;
   align-items: center;
-  font-size: 0.75rem;
+  gap: 0.5rem;
+  font-size: 0.8rem;
+  padding: 0.3rem 0.5rem;
+  border-radius: var(--border-radius-sm);
+  background-color: rgba(35, 35, 35, 0.5);
 }
 
 .fixture-difficulty-indicator {
-  width: 0.75rem;
-  height: 0.75rem;
-  border-radius: 9999px;
-  margin-right: 0.5rem;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.fixture-opponent {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .difficulty-very-easy {
-  background-color: #10b981;
+  background-color: #02c94b;
+  box-shadow: 0 0 5px rgba(2, 201, 75, 0.5);
 }
 
 .difficulty-easy {
-  background-color: #6ee7b7;
+  background-color: #88cc02;
+  box-shadow: 0 0 5px rgba(136, 204, 2, 0.5);
 }
 
 .difficulty-medium {
-  background-color: #d1d5db;
+  background-color: #f9d65d;
+  box-shadow: 0 0 5px rgba(249, 214, 93, 0.5);
 }
 
 .difficulty-hard {
-  background-color: #fca5a5;
+  background-color: #f28f33;
+  box-shadow: 0 0 5px rgba(242, 143, 51, 0.5);
 }
 
 .difficulty-very-hard {
-  background-color: #ef4444;
+  background-color: #e9433c;
+  box-shadow: 0 0 5px rgba(233, 67, 60, 0.5);
 }
 
-.no-recommendations-message {
-  text-align: center;
-  padding: 2rem;
-  background-color: #f3f4f6;
-  border: 1px solid #e5e7eb;
-  border-radius: 0.5rem;
-  color: #6b7280;
+.no-fixtures {
+  font-size: 0.8rem;
+  color: var(--text-color-muted);
+  font-style: italic;
 }
 
+/* Difficulty legend */
 .difficulty-legend {
-  margin-top: 2rem;
-  padding-top: 1rem;
-  border-top: 1px solid #e5e7eb;
+  padding: 1rem 1.25rem;
+  background-color: var(--surface-bg);
+  border-radius: var(--border-radius);
+  margin-top: 1rem;
 }
 
 .legend-title {
-  font-size: 0.875rem;
-  font-weight: 500;
-  color: #4b5563;
-  margin-bottom: 0.5rem;
+  font-size: 1rem;
+  margin-bottom: 0.75rem;
+  color: var(--text-color);
 }
 
 .legend-items {
@@ -283,24 +404,54 @@
 .legend-item {
   display: flex;
   align-items: center;
+  gap: 0.5rem;
 }
 
 .difficulty-indicator {
-  display: inline-block;
-  width: 0.75rem;
-  height: 0.75rem;
-  border-radius: 9999px;
-  margin-right: 0.25rem;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
 }
 
 .difficulty-label {
-  font-size: 0.75rem;
-  color: #4b5563;
+  font-size: 0.85rem;
+  color: var(--text-color-secondary);
 }
 
-@media (max-width: 640px) {
+/* No recommendations message */
+.no-recommendations-message {
+  display: flex;
+  padding: 3rem 2rem;
+  justify-content: center;
+  align-items: center;
+  min-height: 200px;
+  border-radius: var(--border-radius-lg);
+  background-color: rgba(30, 30, 30, 0.3);
+  border: 1px dashed rgba(120, 120, 120, 0.3);
+  margin: 1rem 0;
+}
+
+.message-content {
+  text-align: center;
+  color: var(--text-color-muted);
+  max-width: 400px;
+}
+
+.message-content p {
+  font-size: 1.1rem;
+  line-height: 1.5;
+}
+
+/* Utility classes */
+.mt-6 {
+  margin-top: 1.5rem;
+}
+
+/* Media queries */
+@media (max-width: 768px) {
   .calculator-controls {
     flex-direction: column;
+    gap: 1rem;
     align-items: stretch;
   }
   
@@ -308,8 +459,48 @@
     grid-template-columns: 1fr;
   }
   
+  .data-update-info {
+    flex-direction: column;
+    gap: 0.5rem;
+    align-items: flex-start;
+  }
+  
+  .auto-update-badge {
+    display: block;
+    width: fit-content;
+    margin: 0.5rem 0 0 0;
+  }
+  
+  .recommendations-container {
+    gap: 1.5rem;
+  }
+  
+  .calculator-title {
+    font-size: 1.5rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .team-card {
+    padding: 0.5rem;
+  }
+  
   .teams-grid {
     grid-template-columns: repeat(2, 1fr);
+  }
+  
+  .legend-items {
+    gap: 0.5rem;
+  }
+  
+  .recommendation-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+  
+  .recommendation-gameweek {
+    align-self: flex-start;
   }
 }
 
@@ -332,122 +523,4 @@
     box-shadow: none;
     background-color: white;
   }
-}
-
-/* Player recommendations styles */
-.player-recommendations {
-  margin-top: 1.5rem;
-  margin-bottom: 1.5rem;
-}
-
-.recommendations-title {
-  font-size: 1rem;
-  font-weight: 600;
-  margin-bottom: 1rem;
-  color: #374151;
-}
-
-.positions-container {
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
-}
-
-.position-group {
-  border: 1px solid #e5e7eb;
-  border-radius: 0.5rem;
-  padding: 1rem;
-  background-color: white;
-}
-
-.position-title {
-  font-weight: 600;
-  margin-bottom: 0.75rem;
-  padding: 0.25rem 0.5rem;
-  border-radius: 0.25rem;
-  display: inline-block;
-}
-
-.position-gk {
-  background-color: #fecaca;
-  color: #b91c1c;
-}
-
-.position-def {
-  background-color: #bfdbfe;
-  color: #1e40af;
-}
-
-.position-mid {
-  background-color: #a7f3d0;
-  color: #065f46;
-}
-
-.position-fwd {
-  background-color: #fde68a;
-  color: #92400e;
-}
-
-.position-players {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-  gap: 0.75rem;
-}
-
-.player-card {
-  border: 1px solid #e5e7eb;
-  border-radius: 0.375rem;
-  padding: 0.75rem;
-  font-size: 0.875rem;
-}
-
-.player-name {
-  font-weight: 600;
-  margin-bottom: 0.125rem;
-}
-
-.player-team {
-  color: #6b7280;
-  font-size: 0.75rem;
-  margin-bottom: 0.5rem;
-}
-
-.player-stats {
-  display: flex;
-  gap: 0.5rem;
-  flex-wrap: wrap;
-  margin-bottom: 0.5rem;
-}
-
-.player-stat {
-  font-size: 0.75rem;
-  background-color: #f3f4f6;
-  padding: 0.125rem 0.375rem;
-  border-radius: 0.25rem;
-  white-space: nowrap;
-}
-
-.fixture-difficulty {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  font-size: 0.75rem;
-}
-
-.difficulty-label {
-  color: #6b7280;
-}
-
-.difficulty-value {
-  padding: 0.125rem 0.375rem;
-  border-radius: 0.25rem;
-  color: white;
-}
-
-.last-updated {
-  font-size: 0.75rem;
-  color: #6b7280;
-  text-align: right;
-  margin-bottom: 0.5rem;
-  font-style: italic;
 } 

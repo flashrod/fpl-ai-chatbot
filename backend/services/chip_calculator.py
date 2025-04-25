@@ -1,44 +1,110 @@
 import asyncio
 import functools
 import time
+import logging
 from typing import Dict, List, Tuple, Optional, Any
 from services.fpl_data import get_fpl_data
 
-# Cache configuration
-CACHE_TTL = 86400  # 24 hour cache lifetime (updated from 1 hour)
-_fixtures_cache = {
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+# Cache configuration - only for processed fixture data, not raw FPL data
+CACHE_TTL = 86400  # 24 hour cache lifetime
+_processed_fixtures_cache = {
     "data": None,
-    "timestamp": 0
+    "timestamp": 0,
+    "refresh_task": None,
+    "is_refreshing": False
 }
+
+async def process_fixtures_for_chip_calculations(fpl_data: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Process raw FPL data into a format suitable for chip calculations
+    
+    Args:
+        fpl_data: Raw FPL data from the API
+        
+    Returns:
+        Processed data optimized for chip calculations
+    """
+    return {
+        "fixtures": fpl_data["fixtures"],
+        "teams": {team["id"]: team for team in fpl_data["bootstrap"]["teams"]},
+        "events": fpl_data["bootstrap"]["events"],
+        "current_gameweek": next(
+            (gw for gw in fpl_data["bootstrap"]["events"] if gw["is_current"]), 
+            fpl_data["bootstrap"]["events"][0]
+        )
+    }
+
+async def refresh_processed_fixtures_cache():
+    """
+    Background task to refresh the processed fixtures cache
+    """
+    global _processed_fixtures_cache
+    
+    # Don't try to refresh if already in progress
+    if _processed_fixtures_cache["is_refreshing"]:
+        return
+    
+    try:
+        _processed_fixtures_cache["is_refreshing"] = True
+        logger.info("Starting automatic processed fixtures cache refresh")
+        
+        # Get data from the shared FPL data cache
+        fpl_data = await get_fpl_data()
+        
+        # Process the data for chip calculations
+        processed_data = await process_fixtures_for_chip_calculations(fpl_data)
+        
+        # Update cache
+        _processed_fixtures_cache["data"] = processed_data
+        _processed_fixtures_cache["timestamp"] = time.time()
+        
+        logger.info(f"Processed fixtures cache refreshed successfully at {time.ctime()}")
+        
+        # Schedule next refresh after CACHE_TTL seconds
+        _processed_fixtures_cache["refresh_task"] = asyncio.create_task(schedule_next_refresh())
+    except Exception as e:
+        logger.error(f"Error refreshing processed fixtures cache: {str(e)}")
+    finally:
+        _processed_fixtures_cache["is_refreshing"] = False
+
+async def schedule_next_refresh():
+    """Schedule the next cache refresh after CACHE_TTL seconds"""
+    await asyncio.sleep(CACHE_TTL)
+    await refresh_processed_fixtures_cache()
+
+async def initialize_cache_refresh():
+    """Initialize the cache refresh background task"""
+    if _processed_fixtures_cache["refresh_task"] is None:
+        logger.info("Initializing automatic processed fixtures cache refresh")
+        _processed_fixtures_cache["refresh_task"] = asyncio.create_task(refresh_processed_fixtures_cache())
 
 async def get_cached_fixtures() -> Dict[str, Any]:
     """
-    Get fixtures data with caching to reduce API calls
+    Get processed fixtures data with caching to reduce processing overhead
     """
-    global _fixtures_cache
+    global _processed_fixtures_cache
     current_time = time.time()
     
     # Check if cache is valid
-    if _fixtures_cache["data"] is None or (current_time - _fixtures_cache["timestamp"]) > CACHE_TTL:
-        # Cache expired or not initialized, fetch fresh data
+    if _processed_fixtures_cache["data"] is None or (current_time - _processed_fixtures_cache["timestamp"]) > CACHE_TTL:
+        # Cache expired or not initialized, refresh processed data
+        if not _processed_fixtures_cache["is_refreshing"]:  # Only if not already refreshing
+            await refresh_processed_fixtures_cache()
+            
+    # Initialize background refresh task if not already started
+    if _processed_fixtures_cache["refresh_task"] is None:
+        await initialize_cache_refresh()
+    
+    # If cache is still being populated, process the data on-demand
+    if _processed_fixtures_cache["data"] is None:
         fpl_data = await get_fpl_data()
-        
-        # Structure the data in a more usable format for chip calculations
-        processed_data = {
-            "fixtures": fpl_data["fixtures"],
-            "teams": {team["id"]: team for team in fpl_data["bootstrap"]["teams"]},
-            "events": fpl_data["bootstrap"]["events"],
-            "current_gameweek": next(
-                (gw for gw in fpl_data["bootstrap"]["events"] if gw["is_current"]), 
-                fpl_data["bootstrap"]["events"][0]
-            )
-        }
-        
-        # Update cache
-        _fixtures_cache["data"] = processed_data
-        _fixtures_cache["timestamp"] = current_time
-        
-    return _fixtures_cache["data"]
+        return await process_fixtures_for_chip_calculations(fpl_data)
+            
+    return _processed_fixtures_cache["data"]
 
 def identify_double_gameweeks(fixtures: List[Dict], current_gw: int) -> Dict[int, Dict[int, int]]:
     """
@@ -304,12 +370,21 @@ async def calculate_chip_recommendations(number_of_recommendations: int = 3) -> 
                 "FWD": get_recommended_players(rec, bootstrap_data, position_filter=4)[:5]
             }
         
+        # Calculate next refresh time
+        current_time = time.time()
+        last_updated = _processed_fixtures_cache["timestamp"]
+        next_refresh = last_updated + CACHE_TTL
+        seconds_until_refresh = max(0, next_refresh - current_time)
+        
         return {
             "bench_boost": bench_boost_recommendations,
             "triple_captain": triple_captain_recommendations,
             "current_gameweek": current_gw,
             "status": "success",
-            "last_updated": time.time()
+            "last_updated": last_updated,
+            "next_refresh": next_refresh,
+            "seconds_until_refresh": seconds_until_refresh,
+            "auto_update_enabled": True
         }
     
     except Exception as e:
@@ -322,5 +397,6 @@ async def calculate_chip_recommendations(number_of_recommendations: int = 3) -> 
             "message": f"Failed to calculate chip recommendations: {str(e)}",
             "current_gameweek": None,
             "bench_boost": [],
-            "triple_captain": []
+            "triple_captain": [],
+            "auto_update_enabled": True
         } 
