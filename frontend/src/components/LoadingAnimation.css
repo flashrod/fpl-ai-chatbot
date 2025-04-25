@@ -1,0 +1,62 @@
+.loading-animation-container {
+  position: relative;
+  margin: 20px auto;
+}
+
+.loading-spinner {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  animation: spin 1.2s cubic-bezier(0.5, 0, 0.5, 1) infinite;
+}
+
+.loading-spinner div {
+  position: absolute;
+  width: 30%;
+  height: 30%;
+  border-radius: 50%;
+  background-color: #7b3fe4;
+  animation: loadingFade 1.2s cubic-bezier(0.5, 0, 0.5, 1) infinite;
+}
+
+.loading-spinner div:nth-child(1) {
+  top: 8%;
+  left: 8%;
+  animation-delay: 0s;
+}
+
+.loading-spinner div:nth-child(2) {
+  top: 8%;
+  right: 8%;
+  animation-delay: -0.4s;
+}
+
+.loading-spinner div:nth-child(3) {
+  bottom: 8%;
+  right: 8%;
+  animation-delay: -0.8s;
+}
+
+.loading-spinner div:nth-child(4) {
+  bottom: 8%;
+  left: 8%;
+  animation-delay: -1.2s;
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes loadingFade {
+  0%, 100% {
+    opacity: 0.3;
+  }
+  50% {
+    opacity: 1;
+  }
+} 

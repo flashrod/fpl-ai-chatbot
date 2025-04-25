@@ -1,17 +1,21 @@
 import { useState, useEffect } from 'react'
+import { BrowserRouter, Routes, Route, Link, useLocation, Navigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import ChatBot from './components/ChatBot'
 import TeamRating from './components/TeamRating'
 import ChipCalculator from './components/ChipCalculator'
+import TeamDashboard from './components/TeamDashboard'
 import Background from './components/Background'
-import { FaComment, FaTrophy, FaMagic } from 'react-icons/fa'
+import { FaComment, FaTrophy, FaMagic, FaUser } from 'react-icons/fa'
 import './App.css'
 
-function App() {
+// Wrapper component for the main app content
+function MainContent() {
   const [activeTab, setActiveTab] = useState('chat')
   const [teamRatingResponse, setTeamRatingResponse] = useState(null)
   const [mounted, setMounted] = useState(false)
   const [isParticlesEnabled, setIsParticlesEnabled] = useState(true)
+  const location = useLocation()
 
   // Mount animation trigger
   useEffect(() => {
@@ -21,6 +25,18 @@ function App() {
     const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
     setIsParticlesEnabled(!prefersReducedMotion)
   }, [])
+
+  // Set active tab based on route
+  useEffect(() => {
+    const path = location.pathname;
+    if (path === '/') {
+      setActiveTab('chat');
+    } else if (path === '/team-rating') {
+      setActiveTab('team-rating');
+    } else if (path === '/chip-calculator') {
+      setActiveTab('chip-calculator');
+    }
+  }, [location]);
 
   const handleTeamRatingReceived = (response) => {
     setTeamRatingResponse(response)
@@ -85,6 +101,15 @@ function App() {
     }
   }
 
+  // If we're on a user page route, don't show the main layout
+  if (location.pathname.startsWith('/user/')) {
+    return (
+      <Routes>
+        <Route path="/user/:teamId" element={<TeamDashboard />} />
+      </Routes>
+    );
+  }
+
   return (
     <motion.div 
       className="app-container"
@@ -120,70 +145,86 @@ function App() {
         className="app-tabs"
         variants={tabsVariants}
       >
-        <motion.button 
-          className={`tab-button ${activeTab === 'chat' ? 'active' : ''}`}
-          onClick={() => setActiveTab('chat')}
-          whileHover={{ backgroundColor: 'rgba(5, 211, 177, 0.08)' }}
-          whileTap={{ scale: 0.98 }}
-        >
-          <span className="tab-icon"><FaComment /></span> Chat
-        </motion.button>
-        <motion.button 
-          className={`tab-button ${activeTab === 'team-rating' ? 'active' : ''}`}
-          onClick={() => setActiveTab('team-rating')}
-          whileHover={{ backgroundColor: 'rgba(5, 211, 177, 0.08)' }}
-          whileTap={{ scale: 0.98 }}
-        >
-          <span className="tab-icon"><FaTrophy /></span> Team Rating
-        </motion.button>
-        <motion.button 
-          className={`tab-button ${activeTab === 'chip-calculator' ? 'active' : ''}`}
-          onClick={() => setActiveTab('chip-calculator')}
-          whileHover={{ backgroundColor: 'rgba(5, 211, 177, 0.08)' }}
-          whileTap={{ scale: 0.98 }}
-        >
-          <span className="tab-icon"><FaMagic /></span> Chip Planner
-        </motion.button>
+        <Link to="/">
+          <motion.button 
+            className={`tab-button ${activeTab === 'chat' ? 'active' : ''}`}
+            whileHover={{ backgroundColor: 'rgba(5, 211, 177, 0.08)' }}
+            whileTap={{ scale: 0.98 }}
+          >
+            <span className="tab-icon"><FaComment /></span> Chat
+          </motion.button>
+        </Link>
+        <Link to="/team-rating">
+          <motion.button 
+            className={`tab-button ${activeTab === 'team-rating' ? 'active' : ''}`}
+            whileHover={{ backgroundColor: 'rgba(5, 211, 177, 0.08)' }}
+            whileTap={{ scale: 0.98 }}
+          >
+            <span className="tab-icon"><FaTrophy /></span> Team Rating
+          </motion.button>
+        </Link>
+        <Link to="/chip-calculator">
+          <motion.button 
+            className={`tab-button ${activeTab === 'chip-calculator' ? 'active' : ''}`}
+            whileHover={{ backgroundColor: 'rgba(5, 211, 177, 0.08)' }}
+            whileTap={{ scale: 0.98 }}
+          >
+            <span className="tab-icon"><FaMagic /></span> Chip Planner
+          </motion.button>
+        </Link>
+        <Link to="/user/1">
+          <motion.button 
+            className="tab-button"
+            whileHover={{ backgroundColor: 'rgba(5, 211, 177, 0.08)' }}
+            whileTap={{ scale: 0.98 }}
+          >
+            <span className="tab-icon"><FaUser /></span> Team Dashboard
+          </motion.button>
+        </Link>
       </motion.div>
       
       <motion.main variants={contentVariants}>
         <AnimatePresence mode="wait">
-          {activeTab === 'chat' && (
-            <motion.div
-              key="chat"
-              className="tab-content"
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              transition={{ duration: 0.3 }}
-            >
-              <ChatBot initialMessage={teamRatingResponse} />
-            </motion.div>
-          )}
-          {activeTab === 'team-rating' && (
-            <motion.div
-              key="team-rating"
-              className="tab-content"
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              transition={{ duration: 0.3 }}
-            >
-              <TeamRating onRatingReceived={handleTeamRatingReceived} />
-            </motion.div>
-          )}
-          {activeTab === 'chip-calculator' && (
-            <motion.div
-              key="chip-calculator"
-              className="tab-content"
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              transition={{ duration: 0.3 }}
-            >
-              <ChipCalculator />
-            </motion.div>
-          )}
+          <Routes>
+            <Route path="/" element={
+              <motion.div
+                key="chat"
+                className="tab-content"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                transition={{ duration: 0.3 }}
+              >
+                <ChatBot initialMessage={teamRatingResponse} />
+              </motion.div>
+            } />
+            <Route path="/team-rating" element={
+              <motion.div
+                key="team-rating"
+                className="tab-content"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                transition={{ duration: 0.3 }}
+              >
+                <TeamRating onRatingReceived={handleTeamRatingReceived} />
+              </motion.div>
+            } />
+            <Route path="/chip-calculator" element={
+              <motion.div
+                key="chip-calculator"
+                className="tab-content"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                transition={{ duration: 0.3 }}
+              >
+                <ChipCalculator />
+              </motion.div>
+            } />
+            <Route path="/user/:teamId" element={<TeamDashboard />} />
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
         </AnimatePresence>
       </motion.main>
       
@@ -194,6 +235,14 @@ function App() {
         <p>Powered by <motion.span whileHover={{ scale: 1.05 }}>Fantasy Premier League API</motion.span> + <motion.span whileHover={{ scale: 1.05 }}>Gemini AI</motion.span></p>
       </motion.footer>
     </motion.div>
+  )
+}
+
+function App() {
+  return (
+    <BrowserRouter>
+      <MainContent />
+    </BrowserRouter>
   )
 }
 

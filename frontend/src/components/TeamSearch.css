@@ -1,0 +1,107 @@
+.team-search-container {
+  width: 100%;
+  margin-bottom: 1rem;
+}
+
+.team-search-toggle {
+  width: 100%;
+  padding: 0.75rem;
+  background-color: #38003c;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.team-search-toggle:hover {
+  background-color: #4d1652;
+}
+
+.team-search-form {
+  margin-top: 1rem;
+  padding: 1rem;
+  background-color: #f0f0f0;
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.input-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.input-group label {
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: #333;
+}
+
+.input-group input {
+  padding: 0.75rem;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 1rem;
+}
+
+.team-search-help {
+  font-size: 0.85rem;
+  color: #666;
+  line-height: 1.4;
+  background-color: rgba(255, 255, 255, 0.7);
+  padding: 0.75rem;
+  border-radius: 4px;
+  border-left: 3px solid #38003c;
+}
+
+.example-url {
+  font-family: monospace;
+  background-color: #fff;
+  padding: 0.4rem;
+  border-radius: 4px;
+  margin-top: 0.5rem;
+}
+
+.highlight {
+  color: #e90052;
+  font-weight: bold;
+}
+
+.team-search-form button {
+  padding: 0.75rem;
+  background-color: #00ff87;
+  color: #38003c;
+  border: none;
+  border-radius: 4px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.team-search-form button:hover {
+  background-color: #04db76;
+}
+
+.team-search-form button:disabled {
+  background-color: #cccccc;
+  color: #666666;
+  cursor: not-allowed;
+}
+
+@media (max-width: 768px) {
+  .team-search-form {
+    padding: 0.75rem;
+  }
+  
+  .input-group input {
+    padding: 0.6rem;
+  }
+  
+  .team-search-form button {
+    padding: 0.6rem;
+  }
+} 

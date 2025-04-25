@@ -5,6 +5,7 @@ import logging
 from routes.chat import router as chat_router
 from routes.injuries import router as injuries_router
 from routes.chips import router as chips_router
+from routes.teams import router as teams_router
 from services.chip_calculator import initialize_cache_refresh, refresh_processed_fixtures_cache
 from services.fpl_data import initialize_fpl_data_cache, refresh_fpl_data_cache
 
@@ -25,6 +26,7 @@ app.add_middleware(
 app.include_router(chat_router)
 app.include_router(injuries_router)
 app.include_router(chips_router)
+app.include_router(teams_router)
 
 @app.get("/")
 def read_root():
