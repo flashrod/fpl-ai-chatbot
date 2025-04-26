@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import axios from 'axios';
 
 // Fallback data that mimics the FPL API response structure
 // This helps us bypass the network error for development
@@ -50,49 +51,42 @@ const useDeadlineCountdown = (onDeadlinePassed) => {
       setIsLoading(true);
       setUsingFallback(false);
       
-      // Add timeout to fetch to prevent hanging requests
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
-      
       console.log('Fetching FPL deadline data...');
-      const response = await fetch('https://fantasy.premierleague.com/api/bootstrap-static/', {
-        signal: controller.signal,
-        mode: 'cors', // Explicitly request CORS
-        headers: {
-          'Accept': 'application/json'
-        }
+      
+      // Use Axios with our backend proxy instead of direct fetch
+      const response = await axios.get('/api/fpl/bootstrap-static', {
+        timeout: 10000 // 10 second timeout
       });
       
-      clearTimeout(timeoutId);
-      
-      if (!response.ok) {
-        console.error(`API error: ${response.status} ${response.statusText}`);
-        throw new Error(`Failed to fetch gameweek data. API responded with: ${response.status}`);
-      }
-
-      const data = await response.json();
       console.log('FPL data fetched successfully');
       
       // Process the data
-      processGameweekData(data);
+      processGameweekData(response.data);
       
     } catch (err) {
-      // Special handling for network errors
-      if (err.name === 'AbortError') {
-        console.error('FPL API request timed out');
+      // Handle errors
+      console.error('Error fetching FPL data:', err);
+      
+      if (err.code === 'ECONNABORTED') {
         setError('Request to Fantasy Premier League API timed out. Using fallback data.');
-      } else if (err.message.includes('NetworkError') || err.message.includes('Failed to fetch')) {
-        console.error('Network error when fetching FPL data:', err);
-        setError('Network error. Using local fallback data for development.');
+      } else if (err.response) {
+        // The request was made and the server responded with a status code
+        // that falls out of the range of 2xx
+        setError(`Server error: ${err.response.status}. Using fallback data.`);
+      } else if (err.request) {
+        // The request was made but no response was received
+        setError('No response from server. Using fallback data.');
       } else {
-        console.error('Error fetching FPL data:', err);
-        setError(`${err.message} Using fallback data.`);
+        // Something happened in setting up the request that triggered an Error
+        setError(`${err.message}. Using fallback data.`);
       }
       
       // Use fallback data
       console.log('Using fallback gameweek data');
       setUsingFallback(true);
       processGameweekData(FALLBACK_DATA);
+    } finally {
+      setIsLoading(false);
     }
   }, []);
   
@@ -130,8 +124,6 @@ const useDeadlineCountdown = (onDeadlinePassed) => {
       setDeadline(new Date(currentGameweek.deadline_time));
       setGameweekInfo(currentGameweek);
     }
-    
-    setIsLoading(false);
   };
 
   // Helper function to get next Friday at 18:00 UTC

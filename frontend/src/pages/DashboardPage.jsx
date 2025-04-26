@@ -1,6 +1,6 @@
 import React from 'react';
 import TeamDashboard from '../components/TeamDashboard';
-import DashboardCountdownWidget from '../components/DashboardCountdownWidget.jsx';
+import DashboardCountdownWidget from '../components/DashboardCountdownWidget';
 import './Pages.css';
 
 /**

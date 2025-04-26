@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import DeadlineCountdown from './DeadlineCountdown.jsx';
+import DeadlineCountdown from './DeadlineCountdown';
 import './DashboardCountdownWidget.css';
 
 /**
