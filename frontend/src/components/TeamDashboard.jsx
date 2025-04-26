@@ -143,7 +143,7 @@ const TeamDashboard = () => {
           exit={{ opacity: 0 }}
           className="dashboard-loading-content"
         >
-          <LoadingSpinner />
+        <LoadingSpinner />
           <h3>Loading Team Data</h3>
           <p>Fetching your Fantasy Premier League data...</p>
         </motion.div>
@@ -205,10 +205,10 @@ const TeamDashboard = () => {
           
           <form onSubmit={handleSearchTeam} className="search-team-form">
             <div className="search-input-group">
-              <input
-                type="text"
-                value={searchTeamId}
-                onChange={(e) => setSearchTeamId(e.target.value.trim())}
+            <input
+              type="text"
+              value={searchTeamId}
+              onChange={(e) => setSearchTeamId(e.target.value.trim())}
                 placeholder="Enter your FPL Team ID..."
                 className="search-input"
               />
@@ -219,7 +219,7 @@ const TeamDashboard = () => {
                 whileTap={{ scale: 0.97 }}
                 disabled={!searchTeamId || isNaN(searchTeamId)}
               >
-                View Team
+              View Team
               </motion.button>
             </div>
           </form>
@@ -232,8 +232,8 @@ const TeamDashboard = () => {
               <span className="help-url">
                 https://fantasy.premierleague.com/entry/<strong>YOUR_ID</strong>/event/1
               </span>
-            </p>
-          </div>
+          </p>
+        </div>
         </motion.div>
       </div>
     );
@@ -261,8 +261,8 @@ const TeamDashboard = () => {
               <h1>{teamData.name}</h1>
               <p className="manager-name">Managed by {teamData.player_name}</p>
             </div>
-          </div>
-          
+      </div>
+
           <div className="team-actions">
             <motion.button 
               className="refresh-button"
@@ -388,8 +388,8 @@ const TeamDashboard = () => {
                 </div>
                 <div className="card-body">
                   {renderCaptain(teamData.lineup)}
-                </div>
-              </div>
+        </div>
+      </div>
 
               {/* Current Event Information */}
               {teamData.current_event && (
@@ -416,34 +416,34 @@ const TeamDashboard = () => {
                         <span className="detail-label">Deadline:</span>
                         <span className="detail-value">{formatDeadline(teamData.current_event.deadline)}</span>
                       </div>
-                    </div>
-                  </div>
-                </div>
+        </div>
+        </div>
+      </div>
               )}
-              
+
               {/* Quick Chips Status */}
-              {teamData.chips && (
+      {teamData.chips && (
                 <div className="dashboard-card chips-overview-card">
                   <div className="card-header">
                     <FaMagic className="card-icon magic" />
-                    <h3>Available Chips</h3>
+          <h3>Available Chips</h3>
                   </div>
                   <div className="card-body">
-                    <div className="chips-list">
-                      {teamData.chips.status && teamData.chips.status
-                        .map((chip, index) => (
+          <div className="chips-list">
+            {teamData.chips.status && teamData.chips.status
+              .map((chip, index) => (
                           <div key={index} className={`chip-item ${chip.available ? 'available' : 'used'}`}>
                             <span className="chip-name">{formatChipName(chip.name)}</span>
                             <span className="chip-status">
                               {chip.available ? 'Available' : 'Used'}
                             </span>
-                          </div>
-                        ))}
-                    </div>
-                  </div>
                 </div>
-              )}
-              
+              ))}
+          </div>
+          </div>
+        </div>
+      )}
+
               {/* If we have rank history, show a preview chart */}
               {teamData.rank_history && teamData.rank_history.length > 0 && (
                 <div className="dashboard-card rank-preview-card">
@@ -463,15 +463,15 @@ const TeamDashboard = () => {
           {activeTab === 'lineup' && (
             <div className="lineup-container">
               {teamData.lineup && teamData.lineup.length > 0 ? (
-                <TeamLineup lineup={teamData.lineup} />
+          <TeamLineup lineup={teamData.lineup} />
               ) : (
                 <div className="empty-state">
                   <FaExclamationTriangle />
                   <p>No lineup data available</p>
                 </div>
               )}
-            </div>
-          )}
+        </div>
+      )}
 
           {/* Chips Tab */}
           {activeTab === 'chips' && (
@@ -484,8 +484,8 @@ const TeamDashboard = () => {
                   <p>No chips data available</p>
                 </div>
               )}
-            </div>
-          )}
+        </div>
+      )}
 
           {/* History Tab */}
           {activeTab === 'history' && (
@@ -494,8 +494,8 @@ const TeamDashboard = () => {
                 <div className="rank-history-full">
                   <div className="rank-chart-container">
                     <RankChart history={teamData.rank_history} />
-                  </div>
-                  
+      </div>
+
                   {/* Optional: Add a table view of the history data */}
                   <div className="rank-history-table">
                     <h3>Gameweek Performance</h3>
@@ -523,15 +523,15 @@ const TeamDashboard = () => {
                         )).reverse()}
                       </tbody>
                     </table>
-                  </div>
-                </div>
+          </div>
+        </div>
               ) : (
                 <div className="empty-state">
                   <FaExclamationTriangle />
                   <p>No rank history data available</p>
                 </div>
-              )}
-            </div>
+      )}
+    </div>
           )}
         </motion.div>
       </AnimatePresence>
