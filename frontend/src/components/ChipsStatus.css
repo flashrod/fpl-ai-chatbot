@@ -23,20 +23,20 @@
 }
 
 .chip-card.available {
-  background-color: rgba(46, 204, 113, 0.1);
-  border: 1px solid rgba(46, 204, 113, 0.3);
+  background-color: rgba(0, 255, 135, 0.1);
+  border: 1px solid rgba(0, 255, 135, 0.3);
 }
 
 .chip-card.used {
-  background-color: rgba(149, 165, 166, 0.1);
-  border: 1px solid rgba(149, 165, 166, 0.3);
+  background-color: rgba(56, 0, 60, 0.05);
+  border: 1px solid rgba(56, 0, 60, 0.1);
 }
 
 .chip-name {
   font-size: 14px;
   font-weight: 600;
   margin-bottom: 6px;
-  color: #333;
+  color: #38003c;
 }
 
 .chip-status {
@@ -44,7 +44,7 @@
 }
 
 .available-text {
-  color: #27ae60;
+  color: #04db76;
   font-weight: 500;
 }
 
@@ -61,7 +61,7 @@
 .chips-history h3 {
   font-size: 14px;
   margin: 0 0 10px;
-  color: #333;
+  color: #38003c;
 }
 
 .chips-history ul {

@@ -95,7 +95,7 @@ const PlayerCard = ({ player, index, isBench = false }) => {
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3, delay }}
-      whileHover={{ y: -5, transition: { duration: 0.2 } }}
+      whileHover={{ y: -5, scale: 1.05, transition: { duration: 0.2 } }}
     >
       {captainBadge && (
         <div className={`captain-badge ${player.is_captain ? 'captain' : 'vice-captain'}`}>
@@ -107,7 +107,7 @@ const PlayerCard = ({ player, index, isBench = false }) => {
         {player.team}
       </div>
       
-      <div className="player-name">{player.name}</div>
+      <div className="player-name">{player.name || 'Unknown'}</div>
       
       <div className={`player-points ${getPointsColorClass(player.points)}`}>
         {multiplierText && <span className="multiplier">{multiplierText}</span>}

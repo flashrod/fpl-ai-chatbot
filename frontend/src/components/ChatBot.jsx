@@ -1,206 +1,196 @@
 import React, { useState, useRef, useEffect } from 'react'
 import axios from 'axios'
+import { useNavigate } from 'react-router-dom'
 import './ChatBot.css'
 import TeamSearch from './TeamSearch'
 
 const ChatBot = () => {
   const [messages, setMessages] = useState([
     {
-      id: 1,
-      sender: 'bot',
-      content: "👋 Hi, I'm your FPL Assistant! I can help with player recommendations, transfer advice, and team ratings. Ask me anything about FPL!",
-      timestamp: new Date(),
-      isTyping: false
+      text: "Hi! I'm your FPL Assistant. Ask me about players, strategies, or use the team search to get personalized advice about your FPL team.",
+      sender: 'bot'
     }
   ])
-  const [inputMessage, setInputMessage] = useState('')
-  const [isLoading, setIsLoading] = useState(false)
+  const [input, setInput] = useState('')
+  const [loading, setLoading] = useState(false)
   const messagesEndRef = useRef(null)
-
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }
+  const lastMessageRef = useRef(null)
+  const navigate = useNavigate()
 
   useEffect(() => {
-    scrollToBottom()
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' })
+    }
   }, [messages])
 
-  const handleSendMessage = async (e) => {
-    e.preventDefault()
-
-    if (!inputMessage.trim()) return
-
-    const userMessage = {
-      id: messages.length + 1,
-      sender: 'user',
-      content: inputMessage,
-      timestamp: new Date()
-    }
-
-    setMessages(prevMessages => [...prevMessages, userMessage])
-    setInputMessage('')
-    setIsLoading(true)
-
-    // Add typing indicator
-    const typingIndicator = {
-      id: messages.length + 2,
-      sender: 'bot',
-      content: '',
-      timestamp: new Date(),
-      isTyping: true
-    }
-
-    setMessages(prevMessages => [...prevMessages, typingIndicator])
-
-    try {
-      const response = await axios.post('/api/chat', {
-        message: userMessage.content
-      })
-
-      // Replace typing indicator with actual message
-      setMessages(prevMessages => 
-        prevMessages.map(msg => 
-          msg.isTyping ? {
-            ...msg,
-            content: formatMessage(response.data.response),
-            isTyping: false
-          } : msg
-        )
-      )
-    } catch (error) {
-      // Replace typing indicator with error message
-      setMessages(prevMessages => 
-        prevMessages.map(msg => 
-          msg.isTyping ? {
-            ...msg,
-            content: "Sorry, I'm having trouble connecting to the server. Please try again later.",
-            isTyping: false
-          } : msg
-        )
-      )
-      console.error('Error sending message:', error)
-    } finally {
-      setIsLoading(false)
-    }
-  }
-
-  const handleTeamSearch = async (teamId) => {
-    setIsLoading(true)
+  const formatMessage = (message) => {
+    let formattedText = message.replace(/•\s(.*?)(?=\n•|\n\n|$)/g, '<li>$1</li>')
+    formattedText = formattedText.replace(/<li>(.*?)<\/li>/g, '<ul class="chat-bullet-list">$&</ul>')
     
-    const userMessage = {
-      id: messages.length + 1,
-      sender: 'user',
-      content: `Rate team ${teamId}`,
-      timestamp: new Date()
-    }
-
-    setMessages(prevMessages => [...prevMessages, userMessage])
-
-    // Add typing indicator
-    const typingIndicator = {
-      id: messages.length + 2,
-      sender: 'bot',
-      content: '',
-      timestamp: new Date(),
-      isTyping: true
-    }
-
-    setMessages(prevMessages => [...prevMessages, typingIndicator])
-
-    try {
-      const response = await axios.post('/api/chat', {
-        message: `Rate team ${teamId}`
-      })
-
-      // Replace typing indicator with actual message
-      setMessages(prevMessages => 
-        prevMessages.map(msg => 
-          msg.isTyping ? {
-            ...msg,
-            content: formatMessage(response.data.response),
-            isTyping: false
-          } : msg
-        )
-      )
-    } catch (error) {
-      // Replace typing indicator with error message
-      setMessages(prevMessages => 
-        prevMessages.map(msg => 
-          msg.isTyping ? {
-            ...msg,
-            content: "Sorry, I couldn't retrieve that team's information. Please check the team ID and try again.",
-            isTyping: false
-          } : msg
-        )
-      )
-      console.error('Error rating team:', error)
-    } finally {
-      setIsLoading(false)
-    }
-  }
-
-  const formatMessage = (text) => {
-    if (!text) return ""
+    formattedText = formattedText.replace(/<\/ul>\s*<ul class="chat-bullet-list">/g, '')
     
-    // Convert bullet points (lines starting with * or -) to HTML list
-    let formattedText = text.replace(/^[*-] (.+)$/gm, '<li>$1</li>')
-    if (formattedText.includes('<li>')) {
-      formattedText = formattedText.replace(/<li>(.+)<\/li>/g, '<ul><li>$1</li></ul>')
-      formattedText = formattedText.replace(/<\/ul>\s*<ul>/g, '')
-    }
+    formattedText = formattedText.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
     
-    // Make section headings bold
-    formattedText = formattedText.replace(/^(#+) (.+)$/gm, (match, hashes, content) => {
-      return `<h${hashes.length}>${content}</h${hashes.length}>`
-    })
-    
-    // Convert line breaks to <br>
     formattedText = formattedText.replace(/\n/g, '<br>')
     
     return formattedText
+  }
+
+  const isTeamIdQuery = (message) => {
+    const teamIdRegex = /team\s+(?:id\s*[:=]?\s*)?(\d{4,8})/i
+    const justIdRegex = /^(\d{4,8})$/
+
+    return teamIdRegex.test(message) || justIdRegex.test(message)
+  }
+
+  const extractTeamId = (message) => {
+    const teamIdRegex = /team\s+(?:id\s*[:=]?\s*)?(\d{4,8})/i
+    const justIdRegex = /^(\d{4,8})$/
+    
+    const teamIdMatch = message.match(teamIdRegex)
+    if (teamIdMatch && teamIdMatch[1]) {
+      return teamIdMatch[1]
+    }
+    
+    const justIdMatch = message.match(justIdRegex)
+    if (justIdMatch && justIdMatch[1]) {
+      return justIdMatch[1]
+    }
+    
+    return null
+  }
+
+  const handleSendMessage = async (e) => {
+    e.preventDefault()
+    if (!input.trim() && !loading) return
+
+    const userMessage = { text: input, sender: 'user' }
+    setMessages(prev => [...prev, userMessage])
+    
+    const userInput = input.trim()
+    setInput('')
+    setLoading(true)
+
+    if (isTeamIdQuery(userInput)) {
+      const teamId = extractTeamId(userInput)
+      if (teamId) {
+        const botMessage = {
+          text: `I'll show you the detailed dashboard for team ID ${teamId}. Opening team dashboard...`,
+          sender: 'bot'
+        }
+        
+        setMessages(prev => [...prev, botMessage])
+        setLoading(false)
+        
+        setTimeout(() => {
+          navigate(`/user/${teamId}`)
+        }, 1500)
+        return
+      }
+    }
+
+    try {
+      const response = await axios.post('/api/chat', { message: userInput })
+      
+      if (response.data && response.data.response) {
+        const botMessage = {
+          text: response.data.response,
+          sender: 'bot'
+        }
+        
+        setTimeout(() => {
+          setMessages(prev => [...prev, botMessage])
+          setLoading(false)
+        }, 500)
+      }
+    } catch (error) {
+      console.error('Error sending message:', error)
+      
+      const errorMessage = {
+        text: "Sorry, I couldn't process your request. Please try again later.",
+        sender: 'bot'
+      }
+      
+      setMessages(prev => [...prev, errorMessage])
+      setLoading(false)
+    }
+  }
+
+  const handleTeamSelect = (team) => {
+    const userMessage = { 
+      text: `I want to analyze team ID: ${team.id}`, 
+      sender: 'user' 
+    }
+    
+    setMessages(prev => [...prev, userMessage])
+    
+    const botMessage = {
+      text: `I'll show you the detailed dashboard for team ${team.id} (${team.name}). Opening team dashboard...`,
+      sender: 'bot'
+    }
+    
+    setMessages(prev => [...prev, botMessage])
+    
+    setTimeout(() => {
+      navigate(`/user/${team.id}`)
+    }, 1500)
   }
 
   return (
     <div className="chatbot-container">
       <div className="chatbot-header">
         <h2>FPL Assistant</h2>
-        <p>Ask about players, strategies, or get advice on transfers</p>
       </div>
       
-      <TeamSearch onTeamSearch={handleTeamSearch} />
+      <div className="search-section">
+        <TeamSearch onTeamSelect={handleTeamSelect} />
+      </div>
       
-      <div className="messages-container">
-        {messages.map((message) => (
+      <div className="chat-messages">
+        {messages.map((message, index) => (
           <div 
-            key={message.id} 
-            className={`message ${message.sender === 'user' ? 'user-message' : 'bot-message'}`}
+            key={index}
+            ref={index === messages.length - 1 ? lastMessageRef : null}
+            className={`chat-message ${message.sender === 'user' ? 'user-message' : 'bot-message'}`}
           >
-            {message.isTyping ? (
+            <div className="message-content">
+              <div 
+                dangerouslySetInnerHTML={{ __html: formatMessage(message.text) }} 
+                className="message-text"
+              />
+            </div>
+          </div>
+        ))}
+        
+        {loading && (
+          <div className="chat-message bot-message">
+            <div className="message-content">
               <div className="typing-indicator">
                 <span></span>
                 <span></span>
                 <span></span>
               </div>
-            ) : (
-              <div 
-                className="message-content"
-                dangerouslySetInnerHTML={{ __html: message.sender === 'bot' ? message.content : message.content }}
-              />
-            )}
+            </div>
           </div>
-        ))}
+        )}
+        
         <div ref={messagesEndRef} />
       </div>
-
-      <form className="chatbot-input" onSubmit={handleSendMessage}>
+      
+      <form className="chat-input-form" onSubmit={handleSendMessage}>
         <input
           type="text"
-          value={inputMessage}
-          onChange={(e) => setInputMessage(e.target.value)}
-          placeholder="Ask about players, fixtures, or strategy..."
-          disabled={isLoading}
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          placeholder="Ask me about FPL or enter a team ID..."
+          disabled={loading}
+          className="chat-input"
         />
-        <button type="submit" disabled={!inputMessage.trim() || isLoading}>
+        <button 
+          type="submit" 
+          disabled={loading || !input.trim()}
+          className="chat-send-button"
+        >
           Send
         </button>
       </form>

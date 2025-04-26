@@ -12,7 +12,7 @@
 .chart-title {
   font-size: 16px;
   font-weight: 600;
-  color: #333;
+  color: #38003c;
   margin-bottom: 5px;
 }
 
@@ -27,18 +27,18 @@
 }
 
 .rank-trend.positive {
-  background-color: rgba(46, 204, 113, 0.1);
-  color: #27ae60;
+  background-color: rgba(0, 255, 135, 0.1);
+  color: #04db76;
 }
 
 .rank-trend.negative {
-  background-color: rgba(231, 76, 60, 0.1);
-  color: #c0392b;
+  background-color: rgba(233, 0, 82, 0.1);
+  color: #e90052;
 }
 
 .rank-trend.neutral {
-  background-color: rgba(52, 152, 219, 0.1);
-  color: #2980b9;
+  background-color: rgba(56, 0, 60, 0.1);
+  color: #38003c;
 }
 
 .trend-arrow {
@@ -79,6 +79,7 @@ canvas {
 .label {
   font-weight: 600;
   margin-right: 5px;
+  color: #38003c;
 }
 
 .no-chart-data {
