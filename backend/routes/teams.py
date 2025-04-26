@@ -5,7 +5,11 @@ import asyncio
 from datetime import datetime, timedelta
 import json
 import traceback
+import logging
 from pydantic import BaseModel
+
+# Setup logger
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/teams", tags=["Teams"])
 
@@ -288,6 +292,17 @@ async def process_team_data(team_id, gameweek, bootstrap, team_info, history, pi
                 "used_in": used.get("event") if used else None
             })
         
+        # Extract and format value and bank data from entry_history
+        entry_history_value = picks.get('entry_history', {}).get('value', team_info.get('value', 0))
+        entry_history_bank = picks.get('entry_history', {}).get('bank', team_info.get('bank', 0))
+        
+        # Format the values (divide by 10 and format as currency)
+        formatted_team_value = f"£{entry_history_value / 10.0:.1f}m"
+        formatted_bank_balance = f"£{entry_history_bank / 10.0:.1f}m"
+        
+        # Log the values for debugging
+        logger.info(f"Team {team_id} value: {entry_history_value/10.0:.1f}m, bank: {entry_history_bank/10.0:.1f}m")
+        
         # Create the final processed team data object
         return {
             "team_id": team_id,
@@ -300,6 +315,8 @@ async def process_team_data(team_id, gameweek, bootstrap, team_info, history, pi
             "gameweek_rank": picks.get("entry_history", {}).get("rank", 0),
             "value": team_info.get("value", 0) / 10.0,  # Convert to actual team value format
             "bank": team_info.get("bank", 0) / 10.0,    # Convert to actual bank format
+            "team_value": formatted_team_value,
+            "bank_balance": formatted_bank_balance,
             "lineup": processed_picks,
             "chips": {
                 "used": chips_used,

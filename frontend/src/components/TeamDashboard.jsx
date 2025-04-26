@@ -318,7 +318,9 @@ const TeamDashboard = () => {
           </div>
           <div className="value-content">
             <h3>Team Value</h3>
-            <p className="value-amount">£{teamData.value.toFixed(1)}m</p>
+            <p className="value-amount" title="Team value includes the value of all players in your squad">
+              {teamData.team_value || (teamData.value ? `£${teamData.value.toFixed(1)}m` : 'N/A')}
+            </p>
           </div>
         </div>
         <div className="value-card">
@@ -327,7 +329,9 @@ const TeamDashboard = () => {
           </div>
           <div className="value-content">
             <h3>In The Bank</h3>
-            <p className="value-amount">£{teamData.bank.toFixed(1)}m</p>
+            <p className="value-amount" title="Funds available for transfers">
+              {teamData.bank_balance || (teamData.bank ? `£${teamData.bank.toFixed(1)}m` : 'N/A')}
+            </p>
           </div>
         </div>
       </motion.div>
@@ -510,7 +514,11 @@ const TeamDashboard = () => {
                             <td>{gw.event || '--'}</td>
                             <td>{gw.points || '--'}</td>
                             <td>{gw.rank ? formatRank(gw.rank) : '--'}</td>
-                            <td>£{gw.value ? (gw.value / 10).toFixed(1) : '--'}m</td>
+                            <td>
+                              {gw.value 
+                                ? `£${(gw.value / 10).toFixed(1)}m` 
+                                : '--'}
+                            </td>
                           </tr>
                         )).reverse()}
                       </tbody>
