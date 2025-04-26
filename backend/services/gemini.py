@@ -11,112 +11,80 @@ genai.configure(api_key=GEMINI_API_KEY)
 # Use a model that's available in the list
 model = genai.GenerativeModel("models/gemini-1.5-pro")
 
-async def get_gemini_response(user_input: str, fpl_data: dict) -> str:
-    # Check if it's a team rating request
-    if is_team_rating_request(user_input):
-        return await rate_fpl_team(user_input, fpl_data)
-    
-    # Otherwise proceed with normal response
-    # Get the bootstrap and fixtures data
-    bootstrap_data = fpl_data["bootstrap"]
-    fixtures_data = fpl_data["fixtures"]
-    injuries_data = fpl_data.get("injuries", [])
-    
-    # Process injury data for the prompt - select only critical injuries
-    injury_lines = []
-    for injury in injuries_data:
-        # Only include serious injuries (status 'i') of notable players
-        if injury['status'] == 'i' and injury.get('chance_of_playing') == 0:
-            injury_lines.append(f"{injury['player']} ({injury['team']}): {injury['news']}")
-    
-    # Limit to just 5 key injuries
-    injury_lines = injury_lines[:5]
-    injury_context = "\n".join(injury_lines)
-    
-    # Get teams mapping for fixture processing
-    teams = {team["id"]: team["name"] for team in bootstrap_data["teams"]}
-    
-    # Define function to check if player is injured
-    def is_player_injured(player):
-        return any(p["id"] == player["id"] for p in injuries_data)
-    
-    # Get current gameweek
-    current_gameweek = next(
-        (gw for gw in bootstrap_data["events"] if gw["is_current"]), 
-        bootstrap_data["events"][0]
-    )
-    current_gw_id = current_gameweek["id"]
-    
-    # Process upcoming fixtures (just next gameweek)
-    upcoming_fixtures = [
-        f for f in fixtures_data 
-        if f["event"] is not None and f["event"] == current_gw_id
-    ]
-    
-    # Only include the top 5 most interesting fixtures
-    fixture_lines = []
-    key_teams = [1, 2, 3, 6, 7, 8, 11, 14, 19, 20]  # IDs of top teams
-    
-    interesting_fixtures = []
-    for f in upcoming_fixtures:
-        home_id = f["team_h"]
-        away_id = f["team_a"]
-        # Prioritize matches involving top teams
-        if home_id in key_teams or away_id in key_teams:
-            interesting_fixtures.append(f)
-    
-    # Take top 5 interesting fixtures
-    for f in interesting_fixtures[:5]:
-        home_team = teams.get(f["team_h"], "Unknown")
-        away_team = teams.get(f["team_a"], "Unknown")
-        kickoff_time = f["kickoff_time"].split("T")[0] if f["kickoff_time"] else "TBD"
-        
-        fixture_lines.append(f"{home_team} vs {away_team} - {kickoff_time}")
-    
-    fixture_context = "\n".join(fixture_lines)
-
-    prompt = f"""
-You are a Fantasy Premier League expert assistant. 
-
-Based on the latest data, give very concise, tactical recommendations in response to user questions.
-
-FORMAT YOUR RESPONSE USING THESE RULES:
-1. Keep total response under 100 words
-2. Use bullet points for lists (• Item)
-3. Group information into 1-2 categories at most
-4. Only provide 2-3 specific player recommendations in total
-5. Use simple, direct language
-6. Never list more than 3 players total in your response
-7. Focus on actionable advice only
-8. Don't provide full lists of players by position
-9. Don't recommend injured players
-10. Be extremely concise - brevity is key!
-
---- KEY FIXTURES ---
-{fixture_context}
-
---- CRITICAL INJURIES ---
-{injury_context}
-
-Now answer this question with extreme brevity:
-{user_input}
-""".strip()
-
+async def get_gemini_response(user_input, fpl_data, team_data=None):
+    """Get response from Gemini for the given user input and FPL data"""
     try:
-        response = model.generate_content(prompt)
-        raw_text = response.text
+        # Basic prompt to give context
+        system_prompt = """You are an FPL (Fantasy Premier League) Assistant with expertise in fantasy football.
+        Your purpose is to provide helpful, accurate, and tactical advice on all things FPL.
+        Use data-backed recommendations when available.
+        Focus on being concise but informative, strategic, and up-to-date with the latest FPL information."""
         
-        # Remove markdown formatting and post-process
-        clean_text = format_response(raw_text)
-        return clean_text
+        # Add user team context if available
+        team_context = ""
+        if team_data:
+            # Extract team context
+            team_name = team_data.get('name', 'Unknown')
+            team_player = team_data.get('player_name', 'Unknown')
+            team_summary = team_data.get('summary', {})
+            overall_rank = team_summary.get('overall_rank', 'Unknown')
+            team_value = team_summary.get('value', 0) / 10 if team_summary.get('value') else 'Unknown'
+            
+            # Extract current squad if available
+            squad_info = ""
+            if team_data.get('picks'):
+                picks = team_data.get('picks', [])
+                # Format picks info
+                squad_info = "\nCurrent Squad:\n"
+                for pick in picks:
+                    is_captain = pick.get('is_captain', False)
+                    is_vice = pick.get('is_vice_captain', False)
+                    multiplier = pick.get('multiplier', 1)
+                    position = "Captain" if is_captain else "Vice Captain" if is_vice else ""
+                    # Add player info to squad
+                    squad_info += f"- Player ID: {pick.get('element')} {position}\n"
+                
+                active_chip = team_data.get('active_chip')
+                if active_chip:
+                    squad_info += f"\nActive chip: {active_chip}\n"
+            
+            team_context = f"""
+            I'm providing you with specific data about the user's FPL team:
+            Team name: {team_name}
+            Manager: {team_player}
+            Overall rank: {overall_rank}
+            Team value: £{team_value}m
+            {squad_info}
+            
+            Please provide personalized advice considering this team information.
+            """
+        
+        # Create messages for the API
+        messages = [
+            {"role": "system", "content": system_prompt + team_context},
+            {"role": "user", "content": user_input}
+        ]
+        
+        # Add FPL data context if available
+        if fpl_data:
+            current_gw = fpl_data.get('current_gameweek', {})
+            gw_info = f"Current gameweek: {current_gw.get('id', 'Unknown')}, Status: {current_gw.get('name', 'Unknown')}"
+            
+            fpl_context = f"""
+            Here's some recent FPL data to help with your response:
+            {gw_info}
+            """
+            
+            messages[0]["content"] += "\n" + fpl_context
+        
+        # Generate response
+        model = genai.GenerativeModel(model_name="gemini-pro")
+        response = model.generate_content(messages)
+        
+        return response.text
     except Exception as e:
-        # Detailed error with troubleshooting suggestions
-        error_msg = f"Error from Gemini: {e}"
-        error_msg += "\n\nTroubleshooting tips:"
-        error_msg += "\n• Check your API key"
-        error_msg += "\n• Verify the model name"
-        error_msg += "\n• Check your internet connection"
-        return error_msg
+        logger.error(f"Error getting Gemini response: {e}")
+        return "I'm sorry, I couldn't process your request at the moment. Please try again later."
 
 def is_team_rating_request(user_input: str) -> bool:
     """Detect if the user is asking for team rating"""

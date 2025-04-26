@@ -1,8 +1,9 @@
 import React, { useState, useRef, useEffect } from 'react'
 import axios from 'axios'
 import { useNavigate } from 'react-router-dom'
+import { useTeam } from '../context/TeamContext'
 import './ChatBot.css'
-import TeamSearch from './TeamSearch'
+
 
 const ChatBot = () => {
   const [messages, setMessages] = useState([
@@ -16,12 +17,23 @@ const ChatBot = () => {
   const messagesEndRef = useRef(null)
   const lastMessageRef = useRef(null)
   const navigate = useNavigate()
+  const { teamId, teamData } = useTeam()
 
   useEffect(() => {
     if (messagesEndRef.current) {
       messagesEndRef.current.scrollIntoView({ behavior: 'smooth' })
     }
   }, [messages])
+
+  useEffect(() => {
+    if (teamData && messages.length === 1) {
+      const teamInfoMessage = {
+        text: `I've loaded your team "${teamData.name}". I can now provide personalized advice based on your current squad and performance.`,
+        sender: 'bot'
+      }
+      setMessages(prev => [...prev, teamInfoMessage])
+    }
+  }, [teamData, messages.length])
 
   const formatMessage = (message) => {
     let formattedText = message.replace(/•\s(.*?)(?=\n•|\n\n|$)/g, '<li>$1</li>')
@@ -72,10 +84,10 @@ const ChatBot = () => {
     setLoading(true)
 
     if (isTeamIdQuery(userInput)) {
-      const teamId = extractTeamId(userInput)
-      if (teamId) {
+      const newTeamId = extractTeamId(userInput)
+      if (newTeamId) {
         const botMessage = {
-          text: `I'll show you the detailed dashboard for team ID ${teamId}. Opening team dashboard...`,
+          text: `I'll show you the detailed dashboard for team ID ${newTeamId}. Opening team dashboard...`,
           sender: 'bot'
         }
         
@@ -83,14 +95,25 @@ const ChatBot = () => {
         setLoading(false)
         
         setTimeout(() => {
-          navigate(`/user/${teamId}`)
+          navigate(`/user/${newTeamId}`)
         }, 1500)
         return
       }
     }
 
     try {
-      const response = await axios.post('/api/chat', { message: userInput })
+      // Add a timeout to the axios request to prevent hanging indefinitely
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 seconds timeout
+      
+      const response = await axios.post('/api/chat', { 
+        message: userInput,
+        team_id: teamId
+      }, {
+        signal: controller.signal
+      });
+      
+      clearTimeout(timeoutId);
       
       if (response.data && response.data.response) {
         const botMessage = {
@@ -106,9 +129,17 @@ const ChatBot = () => {
     } catch (error) {
       console.error('Error sending message:', error)
       
-      const errorMessage = {
-        text: "Sorry, I couldn't process your request. Please try again later.",
-        sender: 'bot'
+      let errorMessage;
+      if (error.name === 'AbortError') {
+        errorMessage = {
+          text: "The request took too long to complete. Please try a simpler question or try again later.",
+          sender: 'bot'
+        }
+      } else {
+        errorMessage = {
+          text: "Sorry, I couldn't process your request. Please try again later.",
+          sender: 'bot'
+        }
       }
       
       setMessages(prev => [...prev, errorMessage])
@@ -140,10 +171,14 @@ const ChatBot = () => {
     <div className="chatbot-container">
       <div className="chatbot-header">
         <h2>FPL Assistant</h2>
+        {teamData && (
+          <p className="team-indicator">
+            Personalized advice for: <span>{teamData.name}</span>
+          </p>
+        )}
       </div>
       
       <div className="search-section">
-        <TeamSearch onTeamSelect={handleTeamSelect} />
       </div>
       
       <div className="chat-messages">
@@ -182,7 +217,7 @@ const ChatBot = () => {
           type="text"
           value={input}
           onChange={(e) => setInput(e.target.value)}
-          placeholder="Ask me about FPL or enter a team ID..."
+          placeholder="Ask me about your FPL team..."
           disabled={loading}
           className="chat-input"
         />

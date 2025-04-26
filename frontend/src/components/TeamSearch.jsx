@@ -15,10 +15,20 @@ const TeamSearch = ({ onTeamSelect }) => {
     const checkApiStatus = async () => {
       try {
         // Make a simple test request to check if the search API is working
-        await axios.get('/api/teams/search?query=test');
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
+        
+        await axios.get('/api/teams/search?query=test', {
+          signal: controller.signal
+        });
+        
+        clearTimeout(timeoutId);
         setApiStatus({ checked: true, working: true });
       } catch (error) {
         console.warn('Team search API appears to be unavailable:', error);
+        if (error.name === 'AbortError') {
+          console.warn('Team search API timed out');
+        }
         setApiStatus({ checked: true, working: false });
         // Switch to direct mode if the API isn't working
         setMode('direct');
@@ -37,7 +47,15 @@ const TeamSearch = ({ onTeamSelect }) => {
     setError('');
     
     try {
-      const response = await axios.get(`/api/teams/search?query=${encodeURIComponent(query)}`);
+      // Add a timeout to the axios request
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
+      
+      const response = await axios.get(`/api/teams/search?query=${encodeURIComponent(query)}`, {
+        signal: controller.signal
+      });
+      
+      clearTimeout(timeoutId);
       setTeams(response.data || []);
       
       if (response.data && response.data.length === 0) {
@@ -45,7 +63,13 @@ const TeamSearch = ({ onTeamSelect }) => {
       }
     } catch (error) {
       console.error('Error searching teams:', error);
-      setError('Team search is unavailable. You can enter a team ID directly.');
+      let errorMessage = 'Team search is unavailable. You can enter a team ID directly.';
+      
+      if (error.name === 'AbortError') {
+        errorMessage = 'Search request timed out. Please try again or enter a team ID directly.';
+      }
+      
+      setError(errorMessage);
       // Switch to direct mode if search fails
       setMode('direct');
       setApiStatus({ checked: true, working: false });
@@ -72,7 +96,7 @@ const TeamSearch = ({ onTeamSelect }) => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (mode === 'search') {
+    if (mode === 'search' && apiStatus.working) {
       searchTeams();
     } else {
       handleDirectTeamLookup();
@@ -88,24 +112,19 @@ const TeamSearch = ({ onTeamSelect }) => {
     setQuery('');
   };
 
-  const toggleMode = () => {
-    setMode(mode === 'search' ? 'direct' : 'search');
-    setError('');
-    setTeams([]);
-  };
-
   return (
     <div className="team-search-container">
-      {apiStatus.working && (
+      {apiStatus.checked && (
         <div className="search-mode-toggle">
           <button 
-            className={`mode-button ${mode === 'search' ? 'active' : ''}`} 
+            className={`mode-button ${mode === 'search' && apiStatus.working ? 'active' : ''}`} 
             onClick={() => setMode('search')}
+            disabled={!apiStatus.working}
           >
             Search Team
           </button>
           <button 
-            className={`mode-button ${mode === 'direct' ? 'active' : ''}`} 
+            className={`mode-button ${mode === 'direct' || !apiStatus.working ? 'active' : ''}`} 
             onClick={() => setMode('direct')}
           >
             Enter Team ID
@@ -118,18 +137,18 @@ const TeamSearch = ({ onTeamSelect }) => {
           type="text"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder={mode === 'search' ? "Search for a team..." : "Enter team ID..."}
+          placeholder={(mode === 'search' && apiStatus.working) ? "Search for a team..." : "Enter team ID..."}
           className="team-search-input"
-          inputMode={mode === 'direct' ? 'numeric' : 'text'}
+          inputMode={(mode === 'direct' || !apiStatus.working) ? 'numeric' : 'text'}
         />
         <button type="submit" className="team-search-button" disabled={loading}>
-          {loading ? 'Searching...' : mode === 'search' ? 'Search' : 'Look Up'}
+          {loading ? 'Searching...' : (mode === 'search' && apiStatus.working) ? 'Search' : 'Look Up'}
         </button>
       </form>
       
       {error && <div className="team-search-error">{error}</div>}
       
-      {mode === 'direct' && (
+      {(mode === 'direct' || !apiStatus.working) && (
         <div className="team-search-help">
           <p>Your FPL ID can be found in the URL when you visit your team page:</p>
           <p className="example-url">https://fantasy.premierleague.com/entry/<span className="highlight">YOUR_ID_HERE</span>/event/7</p>
@@ -145,6 +164,7 @@ const TeamSearch = ({ onTeamSelect }) => {
               onClick={() => handleTeamSelect(team)}
             >
               {team.name || team.team_name}
+              {team.player_name && <span className="team-manager-name"> - {team.player_name}</span>}
             </div>
           ))}
         </div>

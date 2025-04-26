@@ -202,4 +202,15 @@
   .chatbot-header h2 {
     font-size: 1.3rem;
   }
+}
+
+.team-indicator {
+  margin-top: 5px;
+  font-size: 0.9rem;
+  color: #a0aec0;
+}
+
+.team-indicator span {
+  color: #38b2ac;
+  font-weight: 600;
 } 

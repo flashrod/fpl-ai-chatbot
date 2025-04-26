@@ -1,0 +1,142 @@
+.api-tester-container {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 2rem;
+  background-color: rgba(20, 20, 30, 0.7);
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(10px);
+  color: #f0f0f0;
+}
+
+.api-tester-container h2 {
+  color: #38b2ac;
+  margin-bottom: 1rem;
+  text-align: center;
+}
+
+.tester-description {
+  margin-bottom: 1.5rem;
+  text-align: center;
+  color: #a0aec0;
+}
+
+.endpoint-selector {
+  margin-bottom: 1.5rem;
+}
+
+.endpoint-selector label {
+  display: block;
+  margin-bottom: 0.5rem;
+  color: #a0aec0;
+}
+
+.endpoint-select {
+  width: 100%;
+  padding: 0.75rem;
+  background-color: rgba(30, 30, 40, 0.6);
+  color: #f0f0f0;
+  border: 1px solid #444;
+  border-radius: 6px;
+  font-size: 1rem;
+}
+
+.endpoint-select:focus {
+  outline: none;
+  border-color: #38b2ac;
+  box-shadow: 0 0 0 2px rgba(56, 178, 172, 0.3);
+}
+
+.team-id-input {
+  margin-bottom: 1.5rem;
+}
+
+.team-id-input label {
+  display: block;
+  margin-bottom: 0.5rem;
+  color: #a0aec0;
+}
+
+.team-id-field {
+  width: 100%;
+  padding: 0.75rem;
+  background-color: rgba(30, 30, 40, 0.6);
+  color: #f0f0f0;
+  border: 1px solid #444;
+  border-radius: 6px;
+  font-size: 1rem;
+}
+
+.team-id-field:focus {
+  outline: none;
+  border-color: #38b2ac;
+  box-shadow: 0 0 0 2px rgba(56, 178, 172, 0.3);
+}
+
+.test-button {
+  display: block;
+  width: 100%;
+  padding: 0.75rem;
+  background-color: #38b2ac;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  margin-bottom: 1.5rem;
+}
+
+.test-button:hover {
+  background-color: #319795;
+}
+
+.test-button:disabled {
+  background-color: #2d3748;
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+.error-display, .response-display {
+  margin-top: 1.5rem;
+  padding: 1rem;
+  border-radius: 6px;
+}
+
+.error-display {
+  background-color: rgba(252, 129, 129, 0.1);
+  border-left: 4px solid #fc8181;
+}
+
+.error-display h3 {
+  color: #fc8181;
+  margin-bottom: 0.75rem;
+}
+
+.response-display {
+  background-color: rgba(56, 178, 172, 0.1);
+  border-left: 4px solid #38b2ac;
+}
+
+.response-display h3 {
+  color: #38b2ac;
+  margin-bottom: 0.75rem;
+}
+
+.response-data, .error-display pre {
+  background-color: rgba(20, 20, 30, 0.6);
+  padding: 1rem;
+  border-radius: 6px;
+  overflow-x: auto;
+  font-family: monospace;
+  font-size: 0.9rem;
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
+@media (max-width: 768px) {
+  .api-tester-container {
+    padding: 1rem;
+  }
+} 

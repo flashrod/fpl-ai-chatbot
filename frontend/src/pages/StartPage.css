@@ -1,0 +1,60 @@
+.start-page {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 20px;
+}
+
+.start-container {
+  width: 100%;
+  max-width: 600px;
+  background-color: rgba(20, 20, 30, 0.7);
+  backdrop-filter: blur(10px);
+  border-radius: 12px;
+  padding: 30px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  text-align: center;
+}
+
+.start-title {
+  color: #38b2ac;
+  font-size: 2rem;
+  margin-bottom: 10px;
+  font-weight: 700;
+}
+
+.start-subtitle {
+  color: #f0f0f0;
+  font-size: 1.1rem;
+  margin-bottom: 30px;
+  opacity: 0.9;
+}
+
+.team-id-form {
+  width: 100%;
+}
+
+.input-container {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 15px;
+}
+
+@media (max-width: 600px) {
+  .input-container {
+    flex-direction: column;
+  }
+
+  .start-container {
+    padding: 20px;
+  }
+
+  .start-title {
+    font-size: 1.5rem;
+  }
+
+  .start-subtitle {
+    font-size: 1rem;
+  }
+}

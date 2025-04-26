@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { motion } from 'framer-motion';
@@ -7,44 +7,72 @@ import TeamLineup from './TeamLineup';
 import RankChart from './RankChart';
 import ChipsStatus from './ChipsStatus';
 import LoadingAnimation from './LoadingAnimation';
+import { useTeam } from '../context/TeamContext';
 import './TeamDashboard.css';
+import LoadingSpinner from './LoadingSpinner';
 
 const TeamDashboard = () => {
-  const { teamId } = useParams();
+  // Get teamId from URL params or context
+  const { teamId: paramTeamId } = useParams();
+  const { teamId: contextTeamId, updateTeamData, saveTeamId } = useTeam();
+  
+  // Determine which teamId to use
+  const teamId = paramTeamId || contextTeamId;
+  
   const navigate = useNavigate();
   const [teamData, setTeamData] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [searchTeamId, setSearchTeamId] = useState('');
+  const dataFetchedRef = useRef(false);
 
   useEffect(() => {
-    const fetchTeamData = async () => {
-      setLoading(true);
-      setError(null);
-      
-      try {
-        if (!teamId || isNaN(teamId)) {
-          throw new Error('Invalid team ID');
+    // Only fetch data if we have a teamId and haven't already fetched for this render cycle
+    if (teamId && !dataFetchedRef.current) {
+      const fetchTeamData = async () => {
+        try {
+          setLoading(true);
+          setError(null);
+          
+          // Save the teamId in the context for future use
+          saveTeamId(teamId);
+          
+          console.log(`Fetching team data for ID: ${teamId}`);
+          const response = await axios.get(`/api/teams/${teamId}`);
+          
+          console.log('API Response:', response.data);
+          
+          if (response.data) {
+            // Update both the context and local state
+            updateTeamData(response.data);
+            setTeamData(response.data);
+            dataFetchedRef.current = true;  // Mark that we've fetched the data
+          } else {
+            console.error('No data received from API');
+            setError('No data received from the server. Please try again.');
+          }
+        } catch (err) {
+          console.error('Error fetching team data:', err);
+          
+          // More detailed error message
+          const errorMessage = err.response 
+            ? `Server error: ${err.response.status} ${err.response.statusText}`
+            : 'Network error: Could not connect to the server.';
+          
+          setError(`Failed to load team data. ${errorMessage}`);
+        } finally {
+          setLoading(false);
         }
-        
-        console.log('Fetching team data for ID:', teamId);
-        const response = await axios.get(`/api/teams/${teamId}`);
-        console.log('Response received:', response.data);
-        setTeamData(response.data);
-      } catch (err) {
-        console.error('Error fetching team data:', err);
-        if (err.response) {
-          console.error('Error response status:', err.response.status);
-          console.error('Error response data:', err.response.data);
-        }
-        setError(err.response?.data?.detail || err.message || 'Failed to fetch team data');
-      } finally {
-        setLoading(false);
-      }
+      };
+
+      fetchTeamData();
+    }
+
+    // Reset the ref when teamId changes
+    return () => {
+      dataFetchedRef.current = false;
     };
-    
-    fetchTeamData();
-  }, [teamId]);
+  }, [teamId, saveTeamId, updateTeamData]); // Include all dependencies
 
   const handleSearchTeam = (e) => {
     e.preventDefault();
@@ -59,209 +87,154 @@ const TeamDashboard = () => {
 
   if (loading) {
     return (
-      <div className="team-dashboard loading-container">
-        <LoadingAnimation size={60} />
-        <p className="loading-text">Loading team data...</p>
+      <div className="team-dashboard-container">
+        <LoadingSpinner />
       </div>
     );
   }
 
   if (error) {
     return (
-      <motion.div 
-        className="team-dashboard error-container"
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-      >
-        <motion.div 
-          className="error-content"
-          initial={{ scale: 0.9 }}
-          animate={{ scale: 1 }}
-          transition={{ duration: 0.3, delay: 0.2 }}
-        >
-          <motion.div
-            animate={{ 
-              rotate: [-5, 5, -5],
-              transition: { repeat: Infinity, duration: 2, repeatType: "reverse" }
-            }}
-          >
-            <FaExclamationTriangle className="error-icon" />
-          </motion.div>
-          <h2>Error Loading Team</h2>
+      <div className="team-dashboard-container">
+        <div className="team-dashboard-error">
+          <h3>Error Loading Team Data</h3>
           <p>{error}</p>
           <div className="error-actions">
-            <motion.button 
-              className="btn-secondary" 
-              onClick={handleGoBack}
-              whileHover={{ scale: 1.05, backgroundColor: '#e0e0e0' }}
-              whileTap={{ scale: 0.95 }}
-            >
+            <button onClick={handleGoBack} className="back-button">
               <FaArrowLeft /> Go Back
-            </motion.button>
-            <div className="search-team-form">
-              <form onSubmit={handleSearchTeam}>
-                <input
-                  type="text"
-                  value={searchTeamId}
-                  onChange={(e) => setSearchTeamId(e.target.value)}
-                  placeholder="Try another Team ID..."
-                />
-                <motion.button 
-                  type="submit" 
-                  className="btn-primary"
-                  whileHover={{ scale: 1.05, backgroundColor: '#04db76' }}
-                  whileTap={{ scale: 0.95 }}
-                >
-                  <FaSearchPlus /> Search
-                </motion.button>
-              </form>
-            </div>
+            </button>
+            <button onClick={() => window.location.reload()} className="retry-button">
+              Try Again
+            </button>
           </div>
-        </motion.div>
-      </motion.div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!teamData) {
+    return (
+      <div className="team-dashboard-container">
+        <div className="team-dashboard-loading">
+          <h3>No Team Data Available</h3>
+          <p>Please enter your team ID to view your FPL dashboard.</p>
+          
+          <form onSubmit={handleSearchTeam} className="team-search-form">
+            <input
+              type="text"
+              value={searchTeamId}
+              onChange={(e) => setSearchTeamId(e.target.value.trim())}
+              placeholder="Enter FPL Team ID..."
+              className="team-search-input"
+            />
+            <button type="submit" className="team-search-button">
+              View Team
+            </button>
+          </form>
+          
+          <p className="team-search-help">
+            Your FPL ID can be found in the URL when you visit your team page:<br />
+            <span className="example-url">https://fantasy.premierleague.com/entry/<strong>YOUR_ID</strong>/event/1</span>
+          </p>
+        </div>
+      </div>
     );
   }
 
   return (
-    <div className="team-dashboard">
-      <motion.div 
-        className="dashboard-header"
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.3 }}
-      >
-        <motion.button 
-          className="back-button" 
-          onClick={handleGoBack}
-          whileHover={{ backgroundColor: '#38003c', color: 'white' }}
-          whileTap={{ scale: 0.95 }}
-        >
-          <FaArrowLeft /> Back
-        </motion.button>
-        
-        <div className="team-info">
-          <h1>{teamData?.name || `Team ${teamId}`}</h1>
-          <h3>Managed by {teamData?.player_name || 'Unknown Manager'}</h3>
-        </div>
-        
-        <div className="search-form">
-          <form onSubmit={handleSearchTeam}>
-            <input
-              type="text"
-              value={searchTeamId}
-              onChange={(e) => setSearchTeamId(e.target.value)}
-              placeholder="Enter Team ID..."
-            />
-            <motion.button 
-              type="submit" 
-              className="btn-primary"
-              whileHover={{ backgroundColor: '#04db76', scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-            >
-              <FaSearchPlus /> Search
-            </motion.button>
-          </form>
-        </div>
-      </motion.div>
+    <div className="team-dashboard-container">
+      <div className="team-dashboard-header">
+        <h2>{teamData.name}</h2>
+        <p className="team-manager">Manager: {teamData.player_name}</p>
+      </div>
 
-      <div className="dashboard-body">
-        <motion.div 
-          className="stats-overview"
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.4, delay: 0.1 }}
-        >
-          <motion.div 
-            className="stat-card"
-            whileHover={{ y: -5, boxShadow: '0 8px 20px rgba(0, 0, 0, 0.1)' }}
-          >
-            <div className="stat-icon">
-              <FaFootballBall />
-            </div>
-            <div className="stat-content">
-              <h3>Gameweek {teamData?.gameweek || 'N/A'} Points</h3>
-              <p className="stat-value">{teamData?.gameweek_points || 0}</p>
-              <p className="stat-subtitle">GW Rank: {formatRank(teamData?.gameweek_rank)}</p>
-            </div>
-          </motion.div>
-          
-          <motion.div 
-            className="stat-card"
-            whileHover={{ y: -5, boxShadow: '0 8px 20px rgba(0, 0, 0, 0.1)' }}
-          >
-            <div className="stat-icon">
-              <FaTrophy />
-            </div>
-            <div className="stat-content">
-              <h3>Overall Points</h3>
-              <p className="stat-value">{teamData?.total_points || 0}</p>
-              <p className="stat-subtitle">OR: {formatRank(teamData?.overall_rank)}</p>
-            </div>
-          </motion.div>
-          
-          <motion.div 
-            className="stat-card"
-            whileHover={{ y: -5, boxShadow: '0 8px 20px rgba(0, 0, 0, 0.1)' }}
-          >
-            <div className="stat-icon">
-              <FaCoins />
-            </div>
-            <div className="stat-content">
-              <h3>Team Value</h3>
-              <p className="stat-value">£{teamData?.value || 0}m</p>
-              <p className="stat-subtitle">Bank: £{teamData?.bank || 0}m</p>
-            </div>
-          </motion.div>
-          
-          <motion.div 
-            className="stat-card"
-            whileHover={{ y: -5, boxShadow: '0 8px 20px rgba(0, 0, 0, 0.1)' }}
-          >
-            <div className="stat-icon">
-              <FaUser />
-            </div>
-            <div className="stat-content">
-              <h3>Captain</h3>
-              {renderCaptain(teamData?.lineup || [])}
-            </div>
-          </motion.div>
-        </motion.div>
-
-        <div className="dashboard-main-content">
-          <motion.div 
-            className="team-lineup-container"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4, delay: 0.2 }}
-          >
-            <h2>Gameweek {teamData?.gameweek || 'N/A'} Lineup</h2>
-            <TeamLineup lineup={teamData?.lineup || []} />
-          </motion.div>
-          
-          <div className="dashboard-sidebar">
-            <motion.div 
-              className="rank-history-container"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.4, delay: 0.3 }}
-            >
-              <h2>Rank History</h2>
-              <RankChart history={teamData?.rank_history || []} />
-            </motion.div>
-            
-            <motion.div 
-              className="chips-container"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.4, delay: 0.4 }}
-            >
-              <h2>Chips</h2>
-              <ChipsStatus chips={teamData?.chips || { used: [], status: [] }} />
-            </motion.div>
-          </div>
+      <div className="team-stats-container">
+        <div className="team-stat">
+          <h3>Overall Rank</h3>
+          <p>{teamData.overall_rank.toLocaleString()}</p>
+        </div>
+        <div className="team-stat">
+          <h3>Gameweek</h3>
+          <p>{teamData.gameweek}</p>
+        </div>
+        <div className="team-stat">
+          <h3>Gameweek Points</h3>
+          <p>{teamData.gameweek_points}</p>
+        </div>
+        <div className="team-stat">
+          <h3>Total Points</h3>
+          <p>{teamData.total_points}</p>
         </div>
       </div>
+
+      <div className="team-value-container">
+        <div className="team-value">
+          <h3>Team Value</h3>
+          <p>£{teamData.value.toFixed(1)}m</p>
+        </div>
+        <div className="team-value">
+          <h3>In The Bank</h3>
+          <p>£{teamData.bank.toFixed(1)}m</p>
+        </div>
+      </div>
+
+      {/* Chips Status Section */}
+      {teamData.chips && (
+        <div className="team-chips-container">
+          <h3>Available Chips</h3>
+          <div className="chips-list">
+            {teamData.chips.status && teamData.chips.status
+              .filter(chip => chip.available)
+              .map((chip, index) => (
+                <div key={index} className="chip-item">
+                  {formatChipName(chip.name)}
+                </div>
+              ))}
+          </div>
+          
+          {/* Detailed Chips Status Component */}
+          <div className="chips-status-wrapper">
+            <ChipsStatus chips={teamData.chips} />
+          </div>
+        </div>
+      )}
+
+      {/* Team Lineup Section */}
+      {teamData.lineup && teamData.lineup.length > 0 && (
+        <div className="team-lineup-wrapper">
+          <h3>Team Lineup</h3>
+          <TeamLineup lineup={teamData.lineup} />
+        </div>
+      )}
+
+      {/* Rank History Chart Section */}
+      {teamData.rank_history && teamData.rank_history.length > 0 && (
+        <div className="rank-history-wrapper">
+          <h3>Rank History</h3>
+          <RankChart history={teamData.rank_history} />
+        </div>
+      )}
+
+      {/* Captain Information */}
+      <div className="captain-section">
+        <h3>Captain Selection</h3>
+        <div className="captain-info">
+          {renderCaptain(teamData.lineup)}
+        </div>
+      </div>
+
+      {/* Current Event Information */}
+      {teamData.current_event && (
+        <div className="current-event-info">
+          <h3>Current Gameweek Information</h3>
+          <div className="event-details">
+            <p><strong>Gameweek:</strong> {teamData.current_event.name}</p>
+            <p><strong>Status:</strong> {getEventStatus(teamData.current_event)}</p>
+            <p><strong>Average Points:</strong> {teamData.current_event.average_points}</p>
+            <p><strong>Deadline:</strong> {formatDeadline(teamData.current_event.deadline)}</p>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
@@ -272,6 +245,18 @@ const formatRank = (rank) => {
   
   // Format with commas for thousands (e.g., 1,234,567)
   return rank.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+};
+
+const formatChipName = (name) => {
+  const chipNames = {
+    'wildcard': 'Wildcard',
+    'wildcard2': 'Second Wildcard',
+    'freehit': 'Free Hit',
+    'bboost': 'Bench Boost',
+    '3xc': 'Triple Captain'
+  };
+  
+  return chipNames[name] || name;
 };
 
 const renderCaptain = (lineup) => {
@@ -290,6 +275,26 @@ const renderCaptain = (lineup) => {
       <p className="stat-subtitle">VC: {viceCaptain?.name || 'None'}</p>
     </>
   );
+};
+
+const getEventStatus = (event) => {
+  if (!event) return 'Unknown';
+  
+  if (event.finished) return 'Finished';
+  if (event.is_current) return 'In Progress';
+  if (event.is_next) return 'Upcoming';
+  return 'Scheduled';
+};
+
+const formatDeadline = (deadline) => {
+  if (!deadline) return 'Not available';
+  
+  try {
+    const date = new Date(deadline);
+    return date.toLocaleString();
+  } catch (e) {
+    return deadline;
+  }
 };
 
 export default TeamDashboard; 

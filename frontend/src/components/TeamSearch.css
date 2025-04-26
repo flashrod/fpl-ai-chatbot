@@ -100,6 +100,12 @@
   border-bottom: none;
 }
 
+.team-manager-name {
+  opacity: 0.7;
+  font-size: 0.9em;
+  margin-left: 5px;
+}
+
 /* Scrollbar styling */
 .team-search-results::-webkit-scrollbar {
   width: 6px;
@@ -143,6 +149,16 @@
 
 .mode-button:hover:not(.active) {
   background-color: rgba(56, 178, 172, 0.2);
+}
+
+.mode-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  color: #555;
+}
+
+.mode-button:disabled:hover {
+  background-color: transparent;
 }
 
 .team-search-help {
