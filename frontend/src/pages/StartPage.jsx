@@ -1,101 +1,71 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
 import { useTeam } from '../context/TeamContext';
-import '../components/TeamSearch.css'; // Reuse existing styles
+import './Pages.css';
 
+/**
+ * Start Page Component
+ * This is the landing page of the application
+ */
 const StartPage = () => {
+  const navigate = useNavigate();
+  const { saveTeamId } = useTeam();
   const [teamId, setTeamId] = useState('');
   const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
-  const navigate = useNavigate();
-  const { saveTeamId, teamId: existingTeamId } = useTeam();
 
-  // If user already has a team ID, redirect to dashboard
-  useEffect(() => {
-    if (existingTeamId) {
-      navigate('/dashboard');
-    }
-  }, [existingTeamId, navigate]);
-
-  const validateTeamId = (id) => {
-    return /^\d{1,10}$/.test(id);
-  };
-
-  const handleSubmit = async (e) => {
+  const handleSubmit = (e) => {
     e.preventDefault();
-
+    
     // Basic validation
-    if (!teamId.trim()) {
-      setError('Please enter your FPL Team ID');
+    if (!teamId || isNaN(teamId) || teamId <= 0) {
+      setError('Please enter a valid FPL Team ID');
       return;
     }
 
-    if (!validateTeamId(teamId)) {
-      setError('Please enter a valid FPL Team ID (numbers only)');
-      return;
-    }
-
-    setLoading(true);
-
-    try {
-      // Try to fetch basic team data to validate the ID
-      const response = await fetch(`/api/teams/${teamId}`);
-
-      if (!response.ok) {
-        throw new Error('Unable to verify team ID. Please check and try again.');
-      }
-
-      // Save valid team ID and redirect
-      saveTeamId(teamId);
+    // Save team ID and navigate to dashboard
+    if (saveTeamId(teamId)) {
       navigate('/dashboard');
-    } catch (error) {
-      console.error('Error validating team ID:', error);
-      setError(error.message || 'Unable to verify team ID. Please check and try again.');
-    } finally {
-      setLoading(false);
+    } else {
+      setError('Failed to save team ID');
     }
   };
 
   return (
-    <div className="start-page">
-      <motion.div
-        className="start-container"
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-      >
-        <h1 className="start-title">Welcome to FPL Assistant</h1>
-        <p className="start-subtitle">Enter your FPL Team ID to get personalized insights and recommendations</p>
-
+    <div className="start-page-container">
+      <div className="start-page-content">
+        <h1 className="start-page-title">Welcome to FPL AI Assistant</h1>
+        <p className="start-page-description">
+          Get insights, analyze your team, and make smarter decisions for Fantasy Premier League.
+        </p>
+        
         <form onSubmit={handleSubmit} className="team-id-form">
-          <div className="input-container">
+          <div className="form-group">
+            <label htmlFor="team-id" className="form-label">Enter your FPL Team ID:</label>
             <input
-              type="text"
+              type="number"
+              id="team-id"
+              className="form-input"
               value={teamId}
               onChange={(e) => setTeamId(e.target.value)}
-              placeholder="Your FPL Team ID"
-              className="team-search-input"
-              inputMode="numeric"
+              placeholder="e.g., 1234567"
             />
-
-            <button
+            {error && <p className="form-error">{error}</p>}
+          </div>
+          
+          <div className="start-page-actions">
+            <button 
               type="submit"
-              className="team-search-button"
-              disabled={loading}
+              className="start-page-button primary"
             >
-              {loading ? 'Verifying...' : 'Continue'}
+              Get Started
             </button>
           </div>
-
-          {error && <div className="team-search-error">{error}</div>}
-
-          <div className="team-search-help">
-            <p>Your FPL ID can be found in the URL when you visit your team page:</p>
-            <p className="example-url">https://fantasy.premierleague.com/entry/<span className="highlight">YOUR_ID_HERE</span>/event/7</p>
-          </div>
         </form>
-      </motion.div>
+        
+        <p className="help-text">
+          To find your FPL Team ID, go to the FPL website, click on the "Points" tab. Your team ID will be in the URL.
+        </p>
+      </div>
     </div>
   );
 };

@@ -20,12 +20,6 @@
   z-index: 1;
 }
 
-.main-content {
-  flex: 1;
-  overflow-y: auto;
-  padding: 20px;
-}
-
 .app-header {
   text-align: center;
   padding: 1.5rem 0;
@@ -65,9 +59,5 @@
 @media (max-width: 768px) {
   .content {
     padding-top: 0;
-  }
-  
-  .main-content {
-    padding: 10px;
   }
 } 
