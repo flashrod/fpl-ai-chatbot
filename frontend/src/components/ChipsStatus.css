@@ -1,67 +1,70 @@
 .chips-status {
   width: 100%;
+  color: var(--text-light, #F7FAFC);
 }
 
 .chips-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 10px;
-  margin-bottom: 20px;
+  gap: 15px;
+  margin-bottom: 25px;
 }
 
 .chip-card {
-  border-radius: 6px;
-  padding: 12px;
+  border-radius: 8px;
+  padding: 15px;
   display: flex;
   flex-direction: column;
   transition: transform 0.2s, box-shadow 0.2s;
+  box-shadow: var(--shadow-sm, 0 1px 3px rgba(0,0,0,0.12));
 }
 
 .chip-card:hover {
   transform: translateY(-3px);
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
 }
 
 .chip-card.available {
-  background-color: rgba(0, 255, 135, 0.1);
-  border: 1px solid rgba(0, 255, 135, 0.3);
+  background-color: rgba(56, 161, 105, 0.2);
+  border: 1px solid rgba(56, 161, 105, 0.3);
 }
 
 .chip-card.used {
-  background-color: rgba(56, 0, 60, 0.05);
-  border: 1px solid rgba(56, 0, 60, 0.1);
+  background-color: rgba(160, 174, 192, 0.1);
+  border: 1px solid rgba(160, 174, 192, 0.2);
 }
 
 .chip-name {
-  font-size: 14px;
+  font-size: 1rem;
   font-weight: 600;
-  margin-bottom: 6px;
-  color: #38003c;
+  margin-bottom: 8px;
+  color: var(--text-light, #F7FAFC);
 }
 
 .chip-status {
-  font-size: 12px;
+  font-size: 0.9rem;
 }
 
 .available-text {
-  color: #04db76;
+  color: #4FD1C5;
   font-weight: 500;
 }
 
 .used-text {
-  color: #7f8c8d;
+  color: #CBD5E0;
 }
 
 .chips-history {
-  margin-top: 25px;
-  border-top: 1px solid #eee;
-  padding-top: 15px;
+  margin-top: 30px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  padding-top: 20px;
 }
 
 .chips-history h3 {
-  font-size: 14px;
-  margin: 0 0 10px;
-  color: #38003c;
+  font-size: 1.1rem;
+  margin: 0 0 15px;
+  color: var(--text-light, #F7FAFC);
+  font-weight: 600;
 }
 
 .chips-history ul {
@@ -73,9 +76,9 @@
 .chips-history li {
   display: flex;
   justify-content: space-between;
-  padding: 6px 0;
-  font-size: 12px;
-  border-bottom: 1px solid #f5f5f5;
+  padding: 10px 0;
+  font-size: 0.9rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
 }
 
 .chips-history li:last-child {
@@ -83,22 +86,23 @@
 }
 
 .chips-history .chip-name {
-  font-size: 12px;
+  font-size: 0.9rem;
   margin-bottom: 0;
+  color: var(--text-light, #F7FAFC);
 }
 
 .chips-history .chip-gw {
-  color: #7f8c8d;
+  color: #A0AEC0;
 }
 
 .no-chips-data {
   text-align: center;
-  padding: 20px;
-  color: #777;
-  background-color: #f9f9f9;
-  border-radius: 6px;
-  border: 1px dashed #ddd;
-  font-size: 14px;
+  padding: 25px;
+  color: var(--text-light, #F7FAFC);
+  background-color: rgba(26, 54, 93, 0.4);
+  border-radius: 8px;
+  border: 1px dashed rgba(255, 255, 255, 0.2);
+  font-size: 1rem;
 }
 
 @media (max-width: 480px) {

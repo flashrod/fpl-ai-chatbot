@@ -1,5 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
+import { FaCheck, FaTimes, FaHistory } from 'react-icons/fa';
 import './ChipsStatus.css';
 
 const ChipsStatus = ({ chips }) => {
@@ -46,14 +47,17 @@ const ChipsStatus = ({ chips }) => {
             key={`${chip.name}-${index}`}
             className={`chip-card ${chip.available ? 'available' : 'used'}`}
             variants={itemVariants}
+            whileHover={{ scale: 1.03 }}
           >
             <div className="chip-name">{chipLabels[chip.name] || chip.name}</div>
             <div className="chip-status">
               {chip.available ? (
-                <span className="available-text">Available</span>
+                <span className="available-text">
+                  <FaCheck style={{ marginRight: '5px' }} /> Available
+                </span>
               ) : (
                 <span className="used-text">
-                  Used in GW{chip.used_in}
+                  <FaTimes style={{ marginRight: '5px' }} /> Used in GW{chip.used_in}
                 </span>
               )}
             </div>
@@ -68,12 +72,12 @@ const ChipsStatus = ({ chips }) => {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.5 }}
         >
-          <h3>Chips History</h3>
+          <h3><FaHistory style={{ marginRight: '8px' }} /> Chips History</h3>
           <ul>
             {used.map((chip, index) => (
               <li key={index}>
                 <span className="chip-name">{chipLabels[chip.name] || chip.name}</span> 
-                <span className="chip-gw">GW{chip.event}</span>
+                <span className="chip-gw">Gameweek {chip.event}</span>
               </li>
             ))}
           </ul>

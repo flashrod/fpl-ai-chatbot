@@ -1,87 +1,223 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { motion } from 'framer-motion';
-import { FaComment, FaTrophy, FaMagic, FaUser, FaSignOutAlt } from 'react-icons/fa';
+import { motion, AnimatePresence } from 'framer-motion';
+import { 
+  FaComment, 
+  FaTrophy, 
+  FaMagic, 
+  FaUser, 
+  FaSignOutAlt, 
+  FaBars, 
+  FaTimes,
+  FaChartLine,
+  FaFootballBall 
+} from 'react-icons/fa';
 import { useTeam } from '../context/TeamContext';
 import './NavBar.css';
 
 const NavBar = () => {
   const location = useLocation();
   const { teamId, clearTeamId, teamData } = useTeam();
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
+
+  // Handle scroll effect for navbar
+  useEffect(() => {
+    const handleScroll = () => {
+      setScrolled(window.scrollY > 20);
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
   
-  // Get current active route
-  const getActiveClass = (path) => {
-    return location.pathname === path ? 'active' : '';
+  // Check if a route is active
+  const isActive = (path) => {
+    return location.pathname === path;
+  };
+  
+  // Toggle mobile menu
+  const toggleMobileMenu = () => {
+    setMobileMenuOpen(!mobileMenuOpen);
+  };
+
+  // Close mobile menu when navigating
+  const handleNavigation = () => {
+    if (mobileMenuOpen) {
+      setMobileMenuOpen(false);
+    }
   };
   
   return (
     <motion.nav 
-      className="navbar"
-      initial={{ y: -50, opacity: 0 }}
-      animate={{ y: 0, opacity: 1 }}
-      transition={{ duration: 0.3, type: 'spring', stiffness: 100 }}
+      className={`navbar ${scrolled ? 'navbar-scrolled' : ''}`}
+      initial={{ y: -100 }}
+      animate={{ y: 0 }}
+      transition={{ 
+        type: "spring", 
+        stiffness: 100, 
+        damping: 20 
+      }}
     >
-      <div className="navbar-brand">
-        <h1>
-          <motion.span 
-            className="soccer-icon"
-            animate={{ rotate: [0, 360] }}
-            transition={{ repeat: Infinity, duration: 8, ease: "linear" }}
+      <div className="navbar-container">
+        <div className="navbar-brand">
+          <Link to="/" className="logo-link">
+            <motion.div 
+              className="logo"
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+            >
+              <motion.div 
+                className="logo-icon"
+                animate={{ rotate: [0, 360] }}
+                transition={{ repeat: Infinity, duration: 10, ease: "linear" }}
+              >
+                <FaFootballBall />
+              </motion.div>
+              <span className="logo-text">
+                <span className="logo-highlight">FPL</span> AI
+              </span>
+            </motion.div>
+          </Link>
+          
+          {/* Mobile menu toggle */}
+          <motion.button 
+            className="mobile-menu-toggle"
+            whileTap={{ scale: 0.9 }}
+            onClick={toggleMobileMenu}
           >
-            ⚽
-          </motion.span> 
-          <span>FPL AI</span> Assistant
-        </h1>
-      </div>
-      
-      <div className="team-info-bar">
-        <div className="team-id-display">
-          <span className="label">Team ID:</span> 
-          <span className="value">{teamId}</span>
-          {teamData && (
-            <span className="team-name">{teamData.name}</span>
-          )}
+            {mobileMenuOpen ? <FaTimes /> : <FaBars />}
+          </motion.button>
         </div>
-      </div>
-      
-      <div className="navbar-menu">
-        <Link to="/dashboard">
-          <motion.button 
-            className={`nav-button ${getActiveClass('/dashboard')}`}
-            whileHover={{ backgroundColor: 'rgba(5, 211, 177, 0.08)' }}
-            whileTap={{ scale: 0.98 }}
+        
+        {/* Team info display */}
+        {teamId && teamData && (
+          <motion.div 
+            className="team-info"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.2 }}
           >
-            <span className="nav-icon"><FaUser /></span> Dashboard
-          </motion.button>
-        </Link>
-        <Link to="/chat">
+            <div className="team-badge">
+              <FaUser />
+            </div>
+            <div className="team-details">
+              <h3 className="team-name">{teamData.name}</h3>
+              <div className="team-meta">
+                <span className="team-id">ID: {teamId}</span>
+                <span className="rank">Rank: {teamData.overall_rank?.toLocaleString() || 'N/A'}</span>
+              </div>
+            </div>
+          </motion.div>
+        )}
+        
+        {/* Navigation links - Desktop */}
+        <div className="navbar-links desktop-menu">
+          <NavLink 
+            to="/dashboard" 
+            icon={<FaChartLine />} 
+            text="Dashboard" 
+            isActive={isActive('/dashboard')}
+            onClick={handleNavigation}
+          />
+          <NavLink 
+            to="/chat" 
+            icon={<FaComment />} 
+            text="Chat with AI" 
+            isActive={isActive('/chat')}
+            onClick={handleNavigation}
+          />
+          <NavLink 
+            to="/chips" 
+            icon={<FaMagic />} 
+            text="Chips Strategy" 
+            isActive={isActive('/chips')}
+            onClick={handleNavigation}
+          />
           <motion.button 
-            className={`nav-button ${getActiveClass('/chat')}`}
-            whileHover={{ backgroundColor: 'rgba(5, 211, 177, 0.08)' }}
-            whileTap={{ scale: 0.98 }}
+            className="change-team-btn"
+            onClick={clearTeamId}
+            whileHover={{ backgroundColor: "rgba(220, 53, 69, 0.12)" }}
+            whileTap={{ scale: 0.95 }}
           >
-            <span className="nav-icon"><FaComment /></span> Chat
+            <FaSignOutAlt />
+            <span>Change Team</span>
           </motion.button>
-        </Link>
-        <Link to="/chips">
-          <motion.button 
-            className={`nav-button ${getActiveClass('/chips')}`}
-            whileHover={{ backgroundColor: 'rgba(5, 211, 177, 0.08)' }}
-            whileTap={{ scale: 0.98 }}
-          >
-            <span className="nav-icon"><FaMagic /></span> Chips
-          </motion.button>
-        </Link>
-        <motion.button 
-          className="nav-button sign-out"
-          whileHover={{ backgroundColor: 'rgba(220, 53, 69, 0.1)' }}
-          whileTap={{ scale: 0.98 }}
-          onClick={clearTeamId}
-        >
-          <span className="nav-icon"><FaSignOutAlt /></span> Change Team
-        </motion.button>
+        </div>
+        
+        {/* Mobile Navigation Menu */}
+        <AnimatePresence>
+          {mobileMenuOpen && (
+            <motion.div 
+              className="mobile-menu"
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              transition={{ duration: 0.3 }}
+            >
+              <NavLink 
+                to="/dashboard" 
+                icon={<FaChartLine />} 
+                text="Dashboard" 
+                isActive={isActive('/dashboard')}
+                onClick={handleNavigation}
+                mobile
+              />
+              <NavLink 
+                to="/chat" 
+                icon={<FaComment />} 
+                text="Chat with AI" 
+                isActive={isActive('/chat')}
+                onClick={handleNavigation}
+                mobile
+              />
+              <NavLink 
+                to="/chips" 
+                icon={<FaMagic />} 
+                text="Chips Strategy" 
+                isActive={isActive('/chips')}
+                onClick={handleNavigation}
+                mobile
+              />
+              <motion.button 
+                className="change-team-btn mobile"
+                onClick={() => {
+                  clearTeamId();
+                  handleNavigation();
+                }}
+                whileTap={{ scale: 0.95 }}
+              >
+                <FaSignOutAlt />
+                <span>Change Team</span>
+              </motion.button>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
     </motion.nav>
+  );
+};
+
+// NavLink component for consistent styling of navigation links
+const NavLink = ({ to, icon, text, isActive, onClick, mobile }) => {
+  return (
+    <Link to={to} onClick={onClick}>
+      <motion.div 
+        className={`nav-link ${isActive ? 'active' : ''} ${mobile ? 'mobile' : ''}`}
+        whileHover={{ backgroundColor: isActive ? "" : "rgba(255, 255, 255, 0.1)" }}
+        whileTap={{ scale: 0.95 }}
+      >
+        <div className="nav-icon">{icon}</div>
+        <span className="nav-text">{text}</span>
+        {isActive && (
+          <motion.div 
+            className="active-indicator"
+            layoutId="activeIndicator"
+            transition={{ type: "spring", stiffness: 300, damping: 30 }}
+          />
+        )}
+      </motion.div>
+    </Link>
   );
 };
 
