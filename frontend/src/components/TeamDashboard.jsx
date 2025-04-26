@@ -24,7 +24,6 @@ import TeamLineup from './TeamLineup';
 import RankChart from './RankChart';
 import ChipsStatus from './ChipsStatus';
 import LoadingSpinner from './LoadingSpinner';
-import DeadlineCountdown from './DeadlineCountdown.jsx';
 import { useTeam } from '../context/TeamContext';
 import './TeamDashboard.css';
 
@@ -129,15 +128,7 @@ const TeamDashboard = () => {
   };
 
   const handleRefresh = () => {
-    dataFetchedRef.current = false;
-    setTeamData(null);
-    setError(null);
-  };
-
-  const handleDeadlinePassed = () => {
-    console.log("Deadline passed - refreshing team data in 1 hour");
-    // Refresh the team data after 1 hour
-    handleRefresh();
+    fetchTeamData();
   };
 
   // Loading State
@@ -254,13 +245,6 @@ const TeamDashboard = () => {
       initial="hidden"
       animate="visible"
     >
-      {/* Deadline Countdown */}
-      <motion.div
-        variants={itemVariants}
-      >
-        <DeadlineCountdown onDeadlinePassed={handleDeadlinePassed} />
-      </motion.div>
-
       {/* Dashboard Header */}
       <motion.div 
         className="dashboard-header"
@@ -275,7 +259,7 @@ const TeamDashboard = () => {
               <h1>{teamData.name}</h1>
               <p className="manager-name">Managed by {teamData.player_name}</p>
             </div>
-      </div>
+          </div>
 
           <div className="team-actions">
             <motion.button 
