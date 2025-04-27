@@ -1,34 +1,35 @@
 .start-page {
-  display: flex;
-  align-items: center;
-  justify-content: center;
   min-height: 100vh;
-  padding: 20px;
+  background-color: rgb(9, 9, 11);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 2rem;
 }
 
 .start-container {
   width: 100%;
   max-width: 600px;
-  background-color: rgba(20, 20, 30, 0.7);
-  backdrop-filter: blur(10px);
-  border-radius: 12px;
-  padding: 30px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
   text-align: center;
+  margin-top: 4rem;
+  animation: fadeIn 0.5s ease-out;
 }
 
 .start-title {
-  color: #38b2ac;
-  font-size: 2rem;
-  margin-bottom: 10px;
-  font-weight: 700;
+  font-size: 2.5rem;
+  font-weight: 600;
+  color: rgb(250, 250, 250);
+  margin-bottom: 1rem;
+}
+
+.title-highlight {
+  color: rgb(34, 197, 94);
 }
 
 .start-subtitle {
-  color: #f0f0f0;
-  font-size: 1.1rem;
-  margin-bottom: 30px;
-  opacity: 0.9;
+  font-size: 1.125rem;
+  color: rgb(161, 161, 170);
+  margin-bottom: 2rem;
 }
 
 .team-id-form {
@@ -37,24 +38,80 @@
 
 .input-container {
   display: flex;
-  gap: 10px;
-  margin-bottom: 15px;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
 }
 
-@media (max-width: 600px) {
-  .input-container {
-    flex-direction: column;
-  }
+.team-input {
+  flex: 1;
+  padding: 0.75rem 1.5rem;
+  border-radius: 9999px;
+  background-color: rgba(39, 39, 42, 0.9);
+  border: 1px solid rgb(63, 63, 70);
+  color: rgb(250, 250, 250);
+  font-size: 1rem;
+  transition: all 0.2s;
+}
 
-  .start-container {
-    padding: 20px;
-  }
+.team-input:focus {
+  outline: none;
+  border-color: rgb(34, 197, 94);
+  box-shadow: 0 0 0 2px rgba(34, 197, 94, 0.2);
+}
 
-  .start-title {
-    font-size: 1.5rem;
-  }
+.submit-button {
+  padding: 0.75rem 1.5rem;
+  border-radius: 9999px;
+  background-color: rgb(34, 197, 94);
+  color: rgb(250, 250, 250);
+  font-weight: 500;
+  transition: all 0.2s;
+  border: none;
+  cursor: pointer;
+}
 
-  .start-subtitle {
-    font-size: 1rem;
+.submit-button:hover {
+  background-color: rgb(22, 163, 74);
+}
+
+.submit-button:disabled {
+  background-color: rgb(63, 63, 70);
+  cursor: not-allowed;
+}
+
+.error-message {
+  color: rgb(239, 68, 68);
+  margin-top: 0.5rem;
+  font-size: 0.875rem;
+}
+
+.help-text {
+  margin-top: 2rem;
+  color: rgb(161, 161, 170);
+  font-size: 0.875rem;
+}
+
+.example-url {
+  background-color: rgba(39, 39, 42, 0.9);
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  margin-top: 0.5rem;
+  font-family: monospace;
+  font-size: 0.875rem;
+}
+
+.highlight {
+  color: rgb(34, 197, 94);
+  font-weight: 600;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }

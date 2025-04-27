@@ -1,73 +1,87 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useTeam } from '../context/TeamContext';
-import './Pages.css';
+import NavBar from '../components/NavBar';
+import './StartPage.css';
 
-/**
- * Start Page Component
- * This is the landing page of the application
- */
 const StartPage = () => {
-  const navigate = useNavigate();
-  const { saveTeamId } = useTeam();
   const [teamId, setTeamId] = useState('');
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
 
-  const handleSubmit = (e) => {
+  const validateTeamId = (id) => {
+    return /^\d{1,10}$/.test(id);
+  };
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    
-    // Basic validation
-    if (!teamId || isNaN(teamId) || teamId <= 0) {
-      setError('Please enter a valid FPL Team ID');
+
+    if (!teamId.trim()) {
+      setError('Please enter your FPL Team ID');
       return;
     }
 
-    // Save team ID and navigate to dashboard
-    if (saveTeamId(teamId)) {
+    if (!validateTeamId(teamId)) {
+      setError('Please enter a valid FPL Team ID (numbers only)');
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      const response = await fetch(`/api/teams/${teamId}`);
+      if (!response.ok) {
+        throw new Error('Unable to verify team ID. Please check and try again.');
+      }
       navigate('/dashboard');
-    } else {
-      setError('Failed to save team ID');
+    } catch (error) {
+      console.error('Error validating team ID:', error);
+      setError(error.message || 'Unable to verify team ID. Please check and try again.');
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <div className="start-page-container">
-      <div className="start-page-content">
-        <h1 className="start-page-title">Welcome to FPL AI Assistant</h1>
-        <p className="start-page-description">
-          Get insights, analyze your team, and make smarter decisions for Fantasy Premier League.
-        </p>
-        
+    <div className="start-page">
+      <NavBar />
+      <div className="start-container">
+        <h1 className="start-title">
+          <span className="title-highlight">FPL</span> Assistant
+        </h1>
+        <p className="start-subtitle">Enter your FPL Team ID to get personalized insights</p>
+
         <form onSubmit={handleSubmit} className="team-id-form">
-          <div className="form-group">
-            <label htmlFor="team-id" className="form-label">Enter your FPL Team ID:</label>
+          <div className="input-container">
             <input
-              type="number"
-              id="team-id"
-              className="form-input"
+              type="text"
               value={teamId}
               onChange={(e) => setTeamId(e.target.value)}
-              placeholder="e.g., 1234567"
+              placeholder="Your FPL Team ID"
+              className="team-input"
+              inputMode="numeric"
             />
-            {error && <p className="form-error">{error}</p>}
-          </div>
-          
-          <div className="start-page-actions">
-            <button 
+            <button
               type="submit"
-              className="start-page-button primary"
+              className="submit-button"
+              disabled={loading}
             >
-              Get Started
+              {loading ? 'Verifying...' : 'Continue'}
             </button>
           </div>
+
+          {error && <div className="error-message">{error}</div>}
+
+          <div className="help-text">
+            <p>Your FPL ID can be found in the URL when you visit your team page:</p>
+            <p className="example-url">
+              https://fantasy.premierleague.com/entry/<span className="highlight">YOUR_ID_HERE</span>/event/7
+            </p>
+          </div>
         </form>
-        
-        <p className="help-text">
-          To find your FPL Team ID, go to the FPL website, click on the "Points" tab. Your team ID will be in the URL.
-        </p>
       </div>
     </div>
   );
 };
 
-export default StartPage; 
+export default StartPage;

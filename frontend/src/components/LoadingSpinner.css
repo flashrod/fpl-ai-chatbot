@@ -5,6 +5,7 @@
   width: 100%;
   height: 100%;
   min-height: 200px;
+  position: relative;
 }
 
 .loading-spinner {
@@ -13,32 +14,82 @@
   align-items: center;
   justify-content: center;
   padding: 2rem;
+  position: relative;
 }
 
-.spinner-circle {
-  width: 50px;
-  height: 50px;
+.spinner-rings {
+  position: relative;
+  width: 80px;
+  height: 80px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.spinner-ring {
+  position: absolute;
   border-radius: 50%;
-  border: 4px solid rgba(56, 178, 172, 0.3);
-  border-top-color: #38b2ac;
-  animation: spin 1s linear infinite;
+  border: 2px solid transparent;
+}
+
+.spinner-ring.outer {
+  width: 100%;
+  height: 100%;
+  border-top-color: var(--accent-color, #05D3B1);
+  border-left-color: rgba(5, 211, 177, 0.2);
+  animation: spinnerRotate 2s cubic-bezier(0.5, 0.1, 0.5, 0.9) infinite;
+}
+
+.spinner-ring.middle {
+  width: 75%;
+  height: 75%;
+  border-right-color: var(--primary-color, #38B2AC);
+  border-bottom-color: rgba(56, 178, 172, 0.2);
+  animation: spinnerRotate 1.75s cubic-bezier(0.5, 0.1, 0.5, 0.9) infinite reverse;
+}
+
+.spinner-ring.inner {
+  width: 50%;
+  height: 50%;
+  border-bottom-color: #7b3fe4;
+  border-right-color: rgba(123, 63, 228, 0.2);
+  animation: spinnerRotate 1.5s cubic-bezier(0.5, 0.1, 0.5, 0.9) infinite;
 }
 
 .spinner-text {
-  margin-top: 1rem;
-  color: #a0aec0;
+  margin-top: 1.5rem;
+  color: var(--text-muted, #A0AEC0);
   font-size: 1rem;
   font-weight: 500;
+  letter-spacing: 0.5px;
+  position: relative;
 }
 
-@keyframes spin {
-  to {
+.spinner-text::after {
+  content: '...';
+  position: absolute;
+  animation: ellipsis 1.5s infinite;
+  width: 1.5rem;
+  text-align: left;
+}
+
+@keyframes spinnerRotate {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
     transform: rotate(360deg);
   }
 }
 
-/* Match the FPL color theme */
-.loading-spinner-container::after {
+@keyframes ellipsis {
+  0% { content: '.'; }
+  33% { content: '..'; }
+  66% { content: '...'; }
+}
+
+/* Create a subtle background glow effect */
+.loading-spinner::before {
   content: '';
   position: absolute;
   top: 50%;
@@ -48,22 +99,22 @@
   margin-top: -60px;
   margin-left: -60px;
   border-radius: 50%;
-  background-color: rgba(30, 30, 40, 0.2);
+  background: radial-gradient(
+    circle,
+    rgba(5, 211, 177, 0.1) 0%,
+    rgba(10, 25, 41, 0) 70%
+  );
   z-index: -1;
-  animation: pulse 2s ease-in-out infinite;
+  animation: glow 2s ease-in-out infinite alternate;
 }
 
-@keyframes pulse {
+@keyframes glow {
   0% {
-    transform: scale(0.8);
+    transform: scale(0.9);
     opacity: 0.3;
-  }
-  50% {
-    transform: scale(1);
-    opacity: 0.5;
   }
   100% {
-    transform: scale(0.8);
-    opacity: 0.3;
+    transform: scale(1.1);
+    opacity: 0.6;
   }
 } 

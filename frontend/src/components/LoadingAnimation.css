@@ -1,62 +1,74 @@
 .loading-animation-container {
   position: relative;
-  margin: 20px auto;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
-.loading-spinner {
+.loading-animation {
+  position: relative;
   width: 100%;
   height: 100%;
-  position: relative;
-  animation: spin 1.2s cubic-bezier(0.5, 0, 0.5, 1) infinite;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
-.loading-spinner div {
+.loading-dot {
   position: absolute;
-  width: 30%;
-  height: 30%;
+  width: 35%;
+  height: 35%;
   border-radius: 50%;
-  background-color: #7b3fe4;
-  animation: loadingFade 1.2s cubic-bezier(0.5, 0, 0.5, 1) infinite;
+  filter: blur(1px);
 }
 
-.loading-spinner div:nth-child(1) {
-  top: 8%;
-  left: 8%;
-  animation-delay: 0s;
+.loading-dot.primary {
+  background: linear-gradient(135deg, var(--primary-color, #38B2AC), var(--secondary-color, #05D3B1));
+  animation: orbit 1.5s ease-in-out infinite;
+  z-index: 2;
 }
 
-.loading-spinner div:nth-child(2) {
-  top: 8%;
-  right: 8%;
-  animation-delay: -0.4s;
+.loading-dot.secondary {
+  background: linear-gradient(135deg, #7b3fe4, #9F7AEA);
+  animation: orbit 1.5s ease-in-out infinite 0.2s reverse;
+  z-index: 1;
 }
 
-.loading-spinner div:nth-child(3) {
-  bottom: 8%;
-  right: 8%;
-  animation-delay: -0.8s;
+.loading-pulse {
+  position: absolute;
+  width: 60%;
+  height: 60%;
+  border-radius: 50%;
+  background: rgba(5, 211, 177, 0.1);
+  animation: pulse 1.5s ease-in-out infinite;
 }
 
-.loading-spinner div:nth-child(4) {
-  bottom: 8%;
-  left: 8%;
-  animation-delay: -1.2s;
-}
-
-@keyframes spin {
+@keyframes orbit {
   0% {
-    transform: rotate(0deg);
+    transform: translateX(0) translateY(-100%);
+  }
+  25% {
+    transform: translateX(100%) translateY(0);
+  }
+  50% {
+    transform: translateX(0) translateY(100%);
+  }
+  75% {
+    transform: translateX(-100%) translateY(0);
   }
   100% {
-    transform: rotate(360deg);
+    transform: translateX(0) translateY(-100%);
   }
 }
 
-@keyframes loadingFade {
+@keyframes pulse {
   0%, 100% {
+    transform: scale(0.8);
     opacity: 0.3;
   }
   50% {
-    opacity: 1;
+    transform: scale(1.2);
+    opacity: 0.6;
   }
 } 
