@@ -131,6 +131,24 @@ const TeamDashboard = () => {
     fetchTeamData();
   };
 
+  // Add a function to render historical data notice
+  const renderHistoricalNotice = () => {
+    if (teamData?.is_historical) {
+      return (
+        <motion.div 
+          className="historical-notice"
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          variants={itemVariants}
+        >
+          <FaHistory className="historical-icon" />
+          <p>Showing historical data from the previous season</p>
+        </motion.div>
+      );
+    }
+    return null;
+  };
+
   // Loading State
   if (loading) {
     return (
@@ -257,9 +275,13 @@ const TeamDashboard = () => {
             </div>
             <div>
               <h1>{teamData.name}</h1>
-              <p className="manager-name">Managed by {teamData.player_name}</p>
+              <p className="manager-name">
+                {teamData.is_historical ? "Historical Data" : `Managed by ${teamData.player_name}`}
+              </p>
             </div>
           </div>
+
+          {renderHistoricalNotice()}
 
           <div className="team-actions">
             <motion.button 
@@ -284,24 +306,28 @@ const TeamDashboard = () => {
           title="Overall Rank" 
           value={teamData.overall_rank.toLocaleString()} 
           color="trophy"
+          subtitle={teamData.is_historical ? "Final Rank" : "Current Rank"}
         />
         <StatCard 
           icon={<FaCalendarAlt />} 
           title="Gameweek" 
           value={teamData.gameweek} 
           color="calendar"
+          subtitle={teamData.is_historical ? "Final Gameweek" : "Current Gameweek"}
         />
         <StatCard 
           icon={<FaChartLine />} 
           title="GW Points" 
           value={teamData.gameweek_points} 
           color="points"
+          subtitle={teamData.is_historical ? "Final GW Points" : "Current GW Points"}
         />
         <StatCard 
           icon={<FaStar />} 
           title="Total Points" 
           value={teamData.total_points} 
           color="star"
+          subtitle={teamData.is_historical ? "Final Points" : "Current Points"}
         />
       </motion.div>
 
@@ -538,7 +564,7 @@ const TeamDashboard = () => {
 };
 
 // Stat Card Component
-const StatCard = ({ icon, title, value, color }) => {
+const StatCard = ({ icon, title, value, color, subtitle }) => {
   return (
     <motion.div 
       className={`stat-card ${color}`}
@@ -551,6 +577,7 @@ const StatCard = ({ icon, title, value, color }) => {
       <div className="stat-content">
         <h3>{title}</h3>
         <p className="stat-value">{value}</p>
+        {subtitle && <p className="stat-subtitle">{subtitle}</p>}
       </div>
     </motion.div>
   );

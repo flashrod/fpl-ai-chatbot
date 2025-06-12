@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTeam } from '../context/TeamContext';
 import NavBar from '../components/NavBar';
 import './StartPage.css';
 
@@ -8,6 +9,7 @@ const StartPage = () => {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const { saveTeamId } = useTeam();
 
   const validateTeamId = (id) => {
     return /^\d{1,10}$/.test(id);
@@ -31,9 +33,16 @@ const StartPage = () => {
     try {
       const response = await fetch(`/api/teams/${teamId}`);
       if (!response.ok) {
-        throw new Error('Unable to verify team ID. Please check and try again.');
+        const errorData = await response.json();
+        throw new Error(errorData.detail || 'Unable to verify team ID. Please check and try again.');
       }
-      navigate('/dashboard');
+      
+      // Save the team ID in the context
+      if (saveTeamId(teamId)) {
+        navigate('/dashboard');
+      } else {
+        throw new Error('Failed to save team ID. Please try again.');
+      }
     } catch (error) {
       console.error('Error validating team ID:', error);
       setError(error.message || 'Unable to verify team ID. Please check and try again.');

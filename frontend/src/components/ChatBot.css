@@ -213,4 +213,129 @@
 .team-indicator span {
   color: #38b2ac;
   font-weight: 600;
+}
+
+/* Error message styling */
+.error-message .message-content {
+  background-color: rgba(220, 38, 38, 0.1);
+  border: 1px solid rgba(220, 38, 38, 0.3);
+  color: #fecaca;
+}
+
+.error-icon {
+  color: #ef4444;
+  margin-right: 8px;
+  flex-shrink: 0;
+}
+
+.message-content {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.retry-button {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 8px;
+  padding: 6px 12px;
+  background-color: rgba(220, 38, 38, 0.2);
+  border: 1px solid rgba(220, 38, 38, 0.3);
+  border-radius: 6px;
+  color: #fecaca;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.retry-button:hover {
+  background-color: rgba(220, 38, 38, 0.3);
+  border-color: rgba(220, 38, 38, 0.4);
+}
+
+.retry-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.retry-icon {
+  width: 14px;
+  height: 14px;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Enhance existing message styles */
+.chat-message {
+  position: relative;
+  margin-bottom: 12px;
+  animation: messageSlideIn 0.3s ease;
+}
+
+@keyframes messageSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Improve loading state visibility */
+.typing-indicator {
+  padding: 8px 16px;
+  background-color: rgba(40, 40, 60, 0.8);
+  border-radius: 18px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.typing-indicator span {
+  width: 6px;
+  height: 6px;
+  background-color: #38b2ac;
+  border-radius: 50%;
+  animation: typing 1.4s infinite ease-in-out;
+}
+
+/* Accessibility improvements */
+.chat-input:focus-visible,
+.chat-send-button:focus-visible {
+  outline: 2px solid #38b2ac;
+  outline-offset: 2px;
+}
+
+.chat-input:disabled,
+.chat-send-button:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+/* Responsive adjustments for error states */
+@media (max-width: 768px) {
+  .retry-button {
+    width: 100%;
+    justify-content: center;
+    margin-top: 12px;
+  }
+  
+  .error-message .message-content {
+    flex-direction: column;
+  }
+  
+  .error-icon {
+    margin-bottom: 4px;
+  }
 } 

@@ -2,8 +2,26 @@ import React, { useState, useRef, useEffect } from 'react'
 import axios from 'axios'
 import { useNavigate } from 'react-router-dom'
 import { useTeam } from '../context/TeamContext'
+import { AlertCircle, RefreshCw } from 'lucide-react'
 import './ChatBot.css'
 
+// Error message types for different scenarios
+const ERROR_TYPES = {
+  NETWORK: 'network',
+  TIMEOUT: 'timeout',
+  SERVER: 'server',
+  VALIDATION: 'validation',
+  UNKNOWN: 'unknown'
+}
+
+// User-friendly error messages
+const ERROR_MESSAGES = {
+  [ERROR_TYPES.NETWORK]: "I'm having trouble connecting to the server. Please check your internet connection.",
+  [ERROR_TYPES.TIMEOUT]: "The request is taking too long. Please try a simpler question or try again later.",
+  [ERROR_TYPES.SERVER]: "The server encountered an error. Please try again in a few moments.",
+  [ERROR_TYPES.VALIDATION]: "I couldn't understand your question. Please try rephrasing it.",
+  [ERROR_TYPES.UNKNOWN]: "Something went wrong. Please try again."
+}
 
 const ChatBot = () => {
   const [messages, setMessages] = useState([
@@ -14,6 +32,8 @@ const ChatBot = () => {
   ])
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
+  const [error, setError] = useState(null)
+  const [retryMessage, setRetryMessage] = useState(null)
   const messagesEndRef = useRef(null)
   const lastMessageRef = useRef(null)
   const navigate = useNavigate()
@@ -72,6 +92,80 @@ const ChatBot = () => {
     return null
   }
 
+  const getErrorMessage = (error) => {
+    // Handle HTTP exceptions from the backend
+    if (error.response?.data?.error) {
+      const { type, message } = error.response.data.error;
+      return {
+        type: type || ERROR_TYPES.UNKNOWN,
+        message: message || ERROR_MESSAGES[ERROR_TYPES.UNKNOWN]
+      };
+    }
+    
+    // Handle other types of errors
+    if (error.name === 'AbortError') {
+      return {
+        type: ERROR_TYPES.TIMEOUT,
+        message: ERROR_MESSAGES[ERROR_TYPES.TIMEOUT]
+      };
+    }
+    
+    if (!error.response) {
+      return {
+        type: ERROR_TYPES.NETWORK,
+        message: ERROR_MESSAGES[ERROR_TYPES.NETWORK]
+      };
+    }
+    
+    const status = error.response.status;
+    if (status >= 500) {
+      return {
+        type: ERROR_TYPES.SERVER,
+        message: ERROR_MESSAGES[ERROR_TYPES.SERVER]
+      };
+    }
+    
+    if (status === 400) {
+      return {
+        type: ERROR_TYPES.VALIDATION,
+        message: ERROR_MESSAGES[ERROR_TYPES.VALIDATION]
+      };
+    }
+    
+    return {
+      type: ERROR_TYPES.UNKNOWN,
+      message: ERROR_MESSAGES[ERROR_TYPES.UNKNOWN]
+    };
+  }
+
+  const handleRetry = async () => {
+    if (!retryMessage) return
+    
+    setError(null)
+    setLoading(true)
+    
+    try {
+      const response = await axios.post('/api/chat', { 
+        message: retryMessage,
+        team_id: teamId
+      })
+      
+      if (response.data && response.data.response) {
+        const botMessage = {
+          text: response.data.response,
+          sender: 'bot'
+        }
+        setMessages(prev => [...prev, botMessage])
+      }
+    } catch (error) {
+      const errorInfo = getErrorMessage(error)
+      setError(errorInfo)
+    } finally {
+      setLoading(false)
+      setRetryMessage(null)
+    }
+  }
+
   const handleSendMessage = async (e) => {
     e.preventDefault()
     if (!input.trim() && !loading) return
@@ -82,6 +176,8 @@ const ChatBot = () => {
     const userInput = input.trim()
     setInput('')
     setLoading(true)
+    setError(null)
+    setRetryMessage(userInput)
 
     if (isTeamIdQuery(userInput)) {
       const newTeamId = extractTeamId(userInput)
@@ -102,47 +198,37 @@ const ChatBot = () => {
     }
 
     try {
-      // Add a timeout to the axios request to prevent hanging indefinitely
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 seconds timeout
+      const controller = new AbortController()
+      const timeoutId = setTimeout(() => controller.abort(), 15000)
       
       const response = await axios.post('/api/chat', { 
         message: userInput,
         team_id: teamId
       }, {
         signal: controller.signal
-      });
+      })
       
-      clearTimeout(timeoutId);
+      clearTimeout(timeoutId)
       
       if (response.data && response.data.response) {
         const botMessage = {
           text: response.data.response,
           sender: 'bot'
         }
-        
-        setTimeout(() => {
-          setMessages(prev => [...prev, botMessage])
-          setLoading(false)
-        }, 500)
+        setMessages(prev => [...prev, botMessage])
       }
     } catch (error) {
-      console.error('Error sending message:', error)
+      const errorInfo = getErrorMessage(error)
+      setError(errorInfo)
       
-      let errorMessage;
-      if (error.name === 'AbortError') {
-        errorMessage = {
-          text: "The request took too long to complete. Please try a simpler question or try again later.",
-          sender: 'bot'
-        }
-      } else {
-        errorMessage = {
-          text: "Sorry, I couldn't process your request. Please try again later.",
-          sender: 'bot'
-        }
+      // Add error message to chat
+      const errorMessage = {
+        text: errorInfo.message,
+        sender: 'bot',
+        isError: true
       }
-      
       setMessages(prev => [...prev, errorMessage])
+    } finally {
       setLoading(false)
     }
   }
@@ -186,13 +272,24 @@ const ChatBot = () => {
           <div 
             key={index}
             ref={index === messages.length - 1 ? lastMessageRef : null}
-            className={`chat-message ${message.sender === 'user' ? 'user-message' : 'bot-message'}`}
+            className={`chat-message ${message.sender === 'user' ? 'user-message' : 'bot-message'} ${message.isError ? 'error-message' : ''}`}
           >
             <div className="message-content">
+              {message.isError && <AlertCircle className="error-icon" />}
               <div 
                 dangerouslySetInnerHTML={{ __html: formatMessage(message.text) }} 
                 className="message-text"
               />
+              {message.isError && retryMessage && (
+                <button 
+                  className="retry-button"
+                  onClick={handleRetry}
+                  disabled={loading}
+                >
+                  <RefreshCw className="retry-icon" />
+                  Try Again
+                </button>
+              )}
             </div>
           </div>
         ))}
@@ -220,11 +317,13 @@ const ChatBot = () => {
           placeholder="Ask me about your FPL team..."
           disabled={loading}
           className="chat-input"
+          aria-label="Chat input"
         />
         <button 
           type="submit" 
           disabled={loading || !input.trim()}
           className="chat-send-button"
+          aria-label="Send message"
         >
           Send
         </button>
