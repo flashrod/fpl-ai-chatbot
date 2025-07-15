@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTeam } from '../context/TeamContext';
+import axios from 'axios';
 import NavBar from '../components/NavBar';
 import './StartPage.css';
 
@@ -9,7 +10,7 @@ const StartPage = () => {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
-  const { saveTeamId } = useTeam();
+  const { saveTeamId } = useTeam(); 
 
   const validateTeamId = (id) => {
     return /^\d{1,10}$/.test(id);
@@ -18,34 +19,29 @@ const StartPage = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (!teamId.trim()) {
-      setError('Please enter your FPL Team ID');
-      return;
-    }
-
-    if (!validateTeamId(teamId)) {
+    if (!teamId.trim() || !validateTeamId(teamId)) {
       setError('Please enter a valid FPL Team ID (numbers only)');
       return;
     }
 
     setLoading(true);
+    setError(null);
 
     try {
-      const response = await fetch(`/api/teams/${teamId}`);
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.detail || 'Unable to verify team ID. Please check and try again.');
-      }
+      // This call will now correctly resolve to GET http://127.0.0.1:8000/api/teams/YOUR_ID
+      const response = await axios.get(`/teams/${teamId}`);
       
-      // Save the team ID in the context
-      if (saveTeamId(teamId)) {
-        navigate('/dashboard');
-      } else {
-        throw new Error('Failed to save team ID. Please try again.');
+      if (response.status === 200) {
+        saveTeamId(teamId);
+        navigate(`/user/${teamId}`);
       }
-    } catch (error) {
-      console.error('Error validating team ID:', error);
-      setError(error.message || 'Unable to verify team ID. Please check and try again.');
+    } catch (err) {
+      console.error('Error validating team ID:', err);
+      if (err.response && err.response.status === 404) {
+        setError(`Team ID ${teamId} could not be found. Please check and try again.`);
+      } else {
+        setError('An error occurred. Please try again.');
+      }
     } finally {
       setLoading(false);
     }
