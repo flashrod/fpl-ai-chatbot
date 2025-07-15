@@ -1,63 +1,34 @@
+/*
+  Based on TailwindCSS recommendations,
+  consider using classes instead of the `@apply` directive
+  @see https://tailwindcss.com/docs/reusing-styles#avoiding-premature-abstraction
+*/
+@import "tailwindcss";
 .app {
-  height: 100vh;
-  width: 100vw;
-  position: relative;
-  overflow: hidden;
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+  @apply h-screen w-screen relative overflow-hidden text-[#f0f0f0];
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto",
+    "Oxygen", "Ubuntu", "Cantarell", "Fira Sans", "Droid Sans", "Helvetica Neue",
     sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  color: #f0f0f0;
 }
-
 .content {
-  display: flex;
-  flex-direction: column;
-  height: 100vh;
-  width: 100%;
-  position: relative;
-  z-index: 1;
+  @apply flex flex-col h-screen w-full relative z-[1];
 }
-
 .app-header {
-  text-align: center;
-  padding: 1.5rem 0;
+  @apply text-center px-0 py-6;
 }
-
 .countdown-error {
-  background-color: rgba(244, 67, 54, 0.1);
-  border: 1px solid rgba(244, 67, 54, 0.3);
-  border-radius: 8px;
-  padding: 0.75rem 1rem;
-  margin-bottom: 1.5rem;
-  text-align: center;
-  color: #FF8A80;
-  font-size: 0.9rem;
+  @apply bg-[rgba(244,67,54,0.1)] border text-center text-[#FF8A80] text-[0.9rem] mb-6 px-4 py-3 rounded-lg border-solid border-[rgba(244,67,54,0.3)];
 }
-
 .footer {
-  background-color: rgba(20, 20, 30, 0.7);
-  backdrop-filter: blur(5px);
-  padding: 15px;
-  text-align: center;
-  font-size: 0.9rem;
-  color: #a0aec0;
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  @apply bg-[rgba(20,20,30,0.7)] backdrop-blur-[5px] text-center text-[0.9rem] text-[#a0aec0] p-[15px] border-t-[rgba(255,255,255,0.1)] border-t border-solid;
 }
-
 .footer a {
-  color: #38b2ac;
-  text-decoration: none;
-  transition: color 0.2s;
+  @apply text-[#38b2ac] no-underline transition-[color] duration-[0.2s] hover:text-[#4fd1c5];
 }
-
-.footer a:hover {
-  color: #4fd1c5;
-}
-
 @media (max-width: 768px) {
   .content {
-    padding-top: 0;
+    @apply pt-0;
   }
-} 
+}
