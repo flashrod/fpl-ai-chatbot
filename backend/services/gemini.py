@@ -4,10 +4,9 @@ import os
 import google.generativeai as genai
 from dotenv import load_dotenv
 
-# Load environment variables from .env file
 load_dotenv()
 
-# Change this to an 'async def' function
+# The function must be declared with 'async def'
 async def get_gemini_response(user_question: str, fpl_context: str) -> str:
     """
     Asynchronously sends a prompt to the Gemini API with added FPL context.
@@ -22,24 +21,18 @@ async def get_gemini_response(user_question: str, fpl_context: str) -> str:
     if fpl_context:
         prompt = f"""
         You are an expert FPL AI assistant.
-        
-        Use the following context to answer the question. If the context doesn't contain the answer, 
-        say that you don't have enough specific information but try to answer from your general knowledge.
-
+        Use the following context to answer the question. If the context doesn't contain the answer, say that you don't have enough specific information but try to answer from your general knowledge.
         Context:
         ---
         {fpl_context}
         ---
-        
         Question: {user_question}
         """
     else:
-        prompt = f"""
-        You are an expert FPL AI assistant. Answer the following question: {user_question}
-        """
+        prompt = f"You are an expert FPL AI assistant. Answer the following question: {user_question}"
 
     try:
-        # Use the asynchronous version of the call with 'await'
+        # Use 'await' and the async version of the function
         response = await model.generate_content_async(prompt)
         return response.text
     except Exception as e:

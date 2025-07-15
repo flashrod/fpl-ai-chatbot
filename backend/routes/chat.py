@@ -44,15 +44,14 @@ def search_fpl_data(query: str) -> str:
         logging.error(f"Database search error: {e}")
         return ""
 
-
-@router.post("/chat")
+# The path is now relative to the prefix in main.py, so it becomes /api/chat
+@router.post("")
 async def chat_endpoint(request: ChatRequest):
     try:
         user_message = request.message
         fpl_context = search_fpl_data(user_message)
         
-        # --- THIS IS THE KEY CHANGE ---
-        # We must 'await' the asynchronous function
+        # Add the 'await' keyword here
         response_text = await get_gemini_response(user_message, fpl_context)
         
         return {"response": response_text}
