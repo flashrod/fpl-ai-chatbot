@@ -1,91 +1,46 @@
-import React, { createContext, useState, useContext, useEffect, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { createContext, useState, useContext } from 'react';
+import axios from 'axios';
 
-// Create the context
 const TeamContext = createContext();
 
-// Create the provider component
+export const useTeam = () => useContext(TeamContext);
+
 export const TeamProvider = ({ children }) => {
-  const [teamId, setTeamId] = useState(null);
+  const [teamId, setTeamIdState] = useState(null);
   const [teamData, setTeamData] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const navigate = useNavigate();
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState(null);
 
-  // On mount, check sessionStorage for existing teamId
-  useEffect(() => {
-    const storedTeamId = sessionStorage.getItem('fplTeamId');
-    if (storedTeamId) {
-      console.log(`Retrieved stored team ID from session: ${storedTeamId}`);
-      setTeamId(storedTeamId);
-    }
-    setLoading(false);
-  }, []);
-
-  // Save teamId to storage and state
-  const saveTeamId = useCallback((id) => {
-    if (id) {
-      console.log(`Saving team ID to session: ${id}`);
-      sessionStorage.setItem('fplTeamId', id);
-      setTeamId(id);
-      return true;
-    }
-    return false;
-  }, []);
-
-  // Clear team ID and redirect to start
-  const clearTeamId = useCallback(() => {
-    console.log('Clearing team ID from session');
-    sessionStorage.removeItem('fplTeamId');
-    setTeamId(null);
+  const validateAndSetTeamId = async (id) => {
+    setIsLoading(true);
+    setError(null);
     setTeamData(null);
-    navigate('/start');
-  }, [navigate]);
-
-  // Set team data - optimize to prevent unnecessary updates
-  const updateTeamData = useCallback((data) => {
-    if (!data) {
-      console.warn('updateTeamData called with null or undefined data');
-      return;
+    try {
+      // *** THIS IS THE FIX ***
+      // We now call the correct endpoint for manager entries
+      const response = await axios.get(`http://127.0.0.1:8000/api/entry/${id}`);
+      
+      if (response.data) {
+        setTeamData(response.data);
+        setTeamIdState(id);
+        console.log("Successfully fetched team data:", response.data);
+      } else {
+         throw new Error("No data returned from API");
+      }
+    } catch (err) {
+      console.error("Error validating team ID: ", err);
+      const errorMessage = err.response?.data?.detail || 'Invalid Team ID or API error.';
+      setError(errorMessage);
+      setTeamData(null);
+      setTeamIdState(null);
+    } finally {
+      setIsLoading(false);
     }
-    
-    console.log('Updating team data:', data);
-    
-    // Simply set the team data - previous optimization was causing issues
-    setTeamData(data);
-    
-    // If this call included a team_id, update that too
-    if (data.team_id && !teamId) {
-      console.log(`Setting team ID from data: ${data.team_id}`);
-      saveTeamId(data.team_id.toString());
-    }
-  }, [teamId, saveTeamId]);
-
-  const contextValue = {
-    teamId,
-    teamData,
-    loading,
-    saveTeamId,
-    clearTeamId,
-    updateTeamData
   };
 
-  // Add debugging to see what's in context when it changes
-  useEffect(() => {
-    console.log('TeamContext updated:', { teamId, hasTeamData: !!teamData });
-  }, [teamId, teamData]);
-
   return (
-    <TeamContext.Provider value={contextValue}>
+    <TeamContext.Provider value={{ teamId, teamData, setTeamData, isLoading, error, validateAndSetTeamId }}>
       {children}
     </TeamContext.Provider>
   );
 };
-
-// Custom hook for using the team context
-export const useTeam = () => {
-  const context = useContext(TeamContext);
-  if (!context) {
-    throw new Error('useTeam must be used within a TeamProvider');
-  }
-  return context;
-}; 

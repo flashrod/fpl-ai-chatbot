@@ -1,41 +1,44 @@
+# routes/teams.py (FIXED VERSION)
+
 from fastapi import APIRouter, HTTPException
-from services.fpl_data import get_fpl_data
 import logging
+
+# Import the corrected service function
+from services.fpl_data import get_fpl_data
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
 
-@router.get("/{team_id}")
-async def get_team_details(team_id: int):
+@router.get("/api/teams/{team_id}")
+def get_team_details(team_id: int):
     """
-    Validates and retrieves basic details for a given FPL team ID.
-    The path is now relative to the '/api/teams' prefix in main.py.
+    Provides detailed information for a single FPL team, including its players.
     """
-    try:
-        logger.info(f"Fetching data for team ID: {team_id}")
-        data = await get_fpl_data("bootstrap-static/")
-        
-        # Find the team (entry) in the bootstrap data
-        team_entry = next((entry for entry in data.get('entries', []) if entry['id'] == team_id), None)
-        
-        if not team_entry:
-            # If the manager ID is not found in the 'entries' list (for top managers)
-            # check the main 'teams' list for Premier League clubs, though this is less likely what's needed.
-             team_club = next((team for team in data.get('teams', []) if team['id'] == team_id), None)
-             if team_club:
-                 return {"id": team_club["id"], "name": team_club["name"]}
-            
-             logger.warning(f"Team ID {team_id} not found in bootstrap data.")
-             raise HTTPException(status_code=404, detail=f"Team with ID {team_id} not found.")
+    logger.info(f"Fetching data for team ID: {team_id}")
 
-        return {
-            "id": team_entry["id"],
-            "name": team_entry["player_first_name"] + " " + team_entry["player_last_name"],
-            "manager_name": team_entry["name"]
-        }
-    except HTTPException as e:
-        # Re-raise HTTP exceptions to let FastAPI handle them
-        raise e
-    except Exception as e:
-        logger.error(f"An unexpected error occurred while fetching team {team_id}: {e}")
-        raise HTTPException(status_code=500, detail="An internal server error occurred.")
+    # 1. Call get_fpl_data() with NO arguments to get all data.
+    all_data = get_fpl_data()
+
+    if not all_data:
+        raise HTTPException(status_code=503, detail="Could not retrieve data from FPL service.")
+
+    # 2. Find the specific team's info from the 'teams' list.
+    # We use a generator expression for an efficient one-liner search.
+    team_info = next((team for team in all_data.get('teams', []) if team['id'] == team_id), None)
+
+    if not team_info:
+        logger.error(f"Team with ID {team_id} not found in the data.")
+        raise HTTPException(status_code=404, detail=f"Team with ID {team_id} not found.")
+
+    # 3. Find all players belonging to that team from the 'elements' (players) list.
+    team_players = [player for player in all_data.get('elements', []) if player['team'] == team_id]
+
+    # 4. Combine the information into a single, clean response.
+    response_data = {
+        "team_details": team_info,
+        "players": team_players
+    }
+    
+    logger.info(f"Successfully found data for team {team_info.get('name')}.")
+    
+    return response_data

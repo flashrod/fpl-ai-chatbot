@@ -1,60 +1,37 @@
-# backend/routes/chat.py
-
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
-import sqlite3
-import pandas as pd
 import logging
-from services.gemini import get_gemini_response
 
-logging.basicConfig(level=logging.INFO)
+from services.gemini import get_gemini_response
+from context.team_context import get_team_context
+
 router = APIRouter()
-DB_NAME = 'fpl_database.db'
+logger = logging.getLogger(__name__)
 
 class ChatRequest(BaseModel):
     message: str
-    team_id: int
+    team_id: int | None = None
 
-def search_fpl_data(query: str) -> str:
-    try:
-        conn = sqlite3.connect(DB_NAME)
-        players_df = pd.read_sql_query("SELECT DISTINCT name FROM gameweeks", conn)
-        player_names = players_df['name'].tolist()
-
-        found_player = None
-        for name in sorted(player_names, key=len, reverse=True):
-            if name.lower() in query.lower():
-                found_player = name
-                break
-
-        if not found_player:
-            return ""
-
-        player_query = "SELECT name, opponent_team, total_points, goals_scored, assists, minutes, was_home FROM gameweeks WHERE name = ? ORDER BY gw DESC LIMIT 5"
-        player_df = pd.read_sql_query(player_query, conn, params=(found_player,))
-        conn.close()
-
-        if player_df.empty:
-            return ""
-            
-        context_string = f"Here is the recent performance for {found_player}:\n"
-        context_string += player_df.to_string(index=False)
-        return context_string
-    except Exception as e:
-        logging.error(f"Database search error: {e}")
-        return ""
-
-# The path is now relative to the prefix in main.py, so it becomes /api/chat
-@router.post("")
+@router.post("/api/chat", tags=["Chat"])
 async def chat_endpoint(request: ChatRequest):
+    """
+    Handles chat messages, gets context for the team_id if provided,
+    and returns a response from the Gemini model.
+    """
+    logger.info(f"Received chat message: '{request.message}' for team_id: {request.team_id}")
     try:
-        user_message = request.message
-        fpl_context = search_fpl_data(user_message)
+        context = ""
+        if request.team_id:
+            # *** THE FINAL FIX ***
+            # Add 'await' because get_team_context is an async function
+            context = await get_team_context(request.team_id)
+
+        full_prompt = f"{context}\n\nUser Question: {request.message}"
         
-        # Add the 'await' keyword here
-        response_text = await get_gemini_response(user_message, fpl_context)
+        response_text = get_gemini_response(full_prompt)
         
-        return {"response": response_text}
+        return {"reply": response_text}
+
     except Exception as e:
-        logging.error(f"Error in chat endpoint: {e}")
-        raise HTTPException(status_code=503, detail="Error getting AI response")
+        logger.error(f"An error occurred in the chat endpoint: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="An internal error occurred while processing the chat message.")

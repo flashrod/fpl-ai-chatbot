@@ -1,59 +1,57 @@
 import logging
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI
+from contextlib import asynccontextmanager
+
+# Import the router that contains our API endpoints
+from routes import teams, chat, chips, fpl, injuries
+
+# 1. Import CORSMiddleware
 from fastapi.middleware.cors import CORSMiddleware
 
-# Import all your routers
-from routes.chat import router as chat_router
-from routes.injuries import router as injuries_router
-from routes.chips import router as chips_router
-from routes.teams import router as teams_router
-from routes.fpl import router as fpl_router
-
-# Import background task and cache functions
-from services.chip_calculator import initialize_cache_refresh, refresh_processed_fixtures_cache
-from services.fpl_data import initialize_fpl_data_cache, refresh_fpl_data_cache
+# Import the caching function to be run on startup
+from services.fpl_data import initialize_fpl_data_cache
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-app = FastAPI(title="FPL AI Assistant API")
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Code to run on startup
+    logger.info("Server starting up...")
+    initialize_fpl_data_cache()
+    yield
+    # Code to run on shutdown
+    logger.info("Server shutting down.")
 
-# Allow your frontend to communicate with the backend
+# Initialize the FastAPI app with the lifespan manager
+app = FastAPI(lifespan=lifespan)
+
+# 2. Define the origins that are allowed to make requests
+# This should be the address of your React frontend
+origins = [
+    "http://localhost",
+    "http://localhost:5173", # Default Vite dev server port
+    "http://127.0.0.1:5173",
+]
+
+# 3. Add the CORS middleware to your app
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Allows all origins for now
+    allow_origins=origins,
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["*"], # Allows all methods (GET, POST, etc.)
+    allow_headers=["*"], # Allows all headers
 )
 
-# --- Add a unique /api prefix to every router ---
-app.include_router(chat_router, prefix="/api/chat", tags=["Chat"])
-app.include_router(teams_router, prefix="/api/teams", tags=["Teams"])
-app.include_router(injuries_router, prefix="/api/injuries", tags=["Injuries"])
-app.include_router(chips_router, prefix="/api/chips", tags=["Chips"])
-app.include_router(fpl_router, prefix="/api/fpl", tags=["FPL"])
+
+# Include the existing routers
+app.include_router(teams.router)
+app.include_router(chat.router)
+app.include_router(chips.router)
+app.include_router(fpl.router)
+app.include_router(injuries.router)
 
 
-@app.on_event("startup")
-async def startup_event():
-    logger.info("Initializing background tasks...")
-    await initialize_fpl_data_cache()
-    await initialize_cache_refresh()
-    logger.info("Background tasks initialized successfully")
-
-@app.get("/", tags=["Root"])
+@app.get("/")
 def read_root():
-    return {"message": "Welcome to the FPL AI Chatbot API!"}
-
-@app.post("/admin/refresh-cache", tags=["Admin"])
-async def refresh_all_caches():
-    try:
-        logger.info("Manually refreshing all caches...")
-        await refresh_fpl_data_cache()
-        await refresh_processed_fixtures_cache()
-        logger.info("Manual cache refresh completed successfully")
-        return {"status": "success", "message": "All caches refreshed successfully"}
-    except Exception as e:
-        logger.error(f"Error during manual cache refresh: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Failed to refresh caches: {str(e)}")
+    return {"message": "Welcome to the FPL AI Chatbot API"}

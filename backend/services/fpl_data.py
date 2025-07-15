@@ -1,162 +1,61 @@
-import httpx
-import time
-import logging
-import asyncio
-from typing import Dict, Any
+# services/fpl_data.py
 
-# Configure logging
+import httpx
+import logging
+from datetime import datetime, timedelta
+
+# Set up logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Base FPL API URLs
-FPL_BOOTSTRAP_URL = "https://fantasy.premierleague.com/api/bootstrap-static/"
-FPL_FIXTURES_URL = "https://fantasy.premierleague.com/api/fixtures/"
+# The main FPL API endpoint for general data
+FPL_API_URL = "https://fantasy.premierleague.com/api/bootstrap-static/"
 
-# Cache configuration
-CACHE_TTL = 86400  # 24 hour cache lifetime
-_fpl_data_cache = {
-    "data": None,
-    "timestamp": 0,
-    "refresh_task": None,
-    "is_refreshing": False
-}
+# A simple in-memory cache
+class FPLCache:
+    def __init__(self):
+        self.data = None
+        self.last_updated = None
+        self.cache_duration = timedelta(minutes=15) # How long before the cache is stale
 
-async def refresh_fpl_data_cache():
-    """
-    Background task to refresh the FPL data cache
-    """
-    global _fpl_data_cache
-    
-    # Don't try to refresh if already in progress
-    if _fpl_data_cache["is_refreshing"]:
-        return
-    
+    def is_stale(self):
+        """Checks if the cached data is older than the cache_duration."""
+        if not self.last_updated:
+            return True
+        return datetime.utcnow() - self.last_updated > self.cache_duration
+
+# Create a single cache instance to be used by the app
+fpl_cache = FPLCache()
+
+def fetch_and_cache_data():
+    """Fetches fresh data from the FPL API and updates the cache."""
+    logger.info("Attempting to fetch fresh FPL data from API...")
     try:
-        _fpl_data_cache["is_refreshing"] = True
-        logger.info("Starting automatic FPL data cache refresh")
+        response = httpx.get(FPL_API_URL)
+        response.raise_for_status()  # Raise an exception for bad status codes
         
-        # Fetch fresh data directly from the API
-        async with httpx.AsyncClient() as client:
-            # Fetch general data (includes players, teams, etc.)
-            bootstrap_response = await client.get(FPL_BOOTSTRAP_URL)
-            bootstrap_response.raise_for_status()
-            bootstrap_data = bootstrap_response.json()
-            
-            # Get team name mapping for easier reference
-            teams = {team["id"]: team["name"] for team in bootstrap_data["teams"]}
-            
-            # Process injury data
-            injured_players = []
-            for p in bootstrap_data["elements"]:
-                if p["status"] not in ["a", "u"]:  # Not available or unknown
-                    injured_players.append({
-                        "id": p["id"],
-                        "player": f"{p['first_name']} {p['second_name']}",
-                        "web_name": p["web_name"],
-                        "team": teams.get(p["team"], "Unknown"),
-                        "team_id": p["team"],
-                        "status": p["status"],
-                        "news": p["news"],
-                        "chance_of_playing": p["chance_of_playing_next_round"]
-                    })
-            
-            # Fetch fixture data
-            fixtures_response = await client.get(FPL_FIXTURES_URL)
-            fixtures_response.raise_for_status()
-            fixtures_data = fixtures_response.json()
-            
-            # Compile the data
-            fresh_data = {
-                "bootstrap": bootstrap_data,
-                "fixtures": fixtures_data,
-                "injuries": injured_players
-            }
-        
-        # Update cache
-        _fpl_data_cache["data"] = fresh_data
-        _fpl_data_cache["timestamp"] = time.time()
-        
-        logger.info(f"FPL data cache refreshed successfully at {time.ctime()}")
-        
-        # Schedule next refresh after CACHE_TTL seconds
-        _fpl_data_cache["refresh_task"] = asyncio.create_task(schedule_next_refresh())
-    except Exception as e:
-        logger.error(f"Error refreshing FPL data cache: {str(e)}")
-    finally:
-        _fpl_data_cache["is_refreshing"] = False
+        fpl_cache.data = response.json()
+        fpl_cache.last_updated = datetime.utcnow()
+        logger.info("FPL data cache refreshed successfully.")
+        return True
+    except httpx.RequestError as e:
+        logger.error(f"An error occurred while requesting FPL data: {e}")
+        return False
 
-async def schedule_next_refresh():
-    """Schedule the next cache refresh after CACHE_TTL seconds"""
-    await asyncio.sleep(CACHE_TTL)
-    await refresh_fpl_data_cache()
+def initialize_fpl_data_cache():
+    """Function to be called on application startup."""
+    logger.info("Initializing FPL data cache...")
+    fetch_and_cache_data()
 
-async def initialize_fpl_data_cache():
-    """Initialize the cache refresh background task"""
-    if _fpl_data_cache["refresh_task"] is None:
-        logger.info("Initializing automatic FPL data cache refresh")
-        _fpl_data_cache["refresh_task"] = asyncio.create_task(refresh_fpl_data_cache())
-
-async def get_fpl_data() -> Dict[str, Any]:
+def get_fpl_data():
     """
-    Fetch both player and fixture data from the FPL API with caching to reduce API calls
-    
-    Returns:
-        Dictionary containing bootstrap data, fixtures, and processed injury information
+    Returns FPL data from the cache.
+    Refreshes the cache if the data is stale.
+    This function takes NO arguments.
     """
-    global _fpl_data_cache
-    current_time = time.time()
+    if fpl_cache.is_stale():
+        logger.info("Cache is stale or empty, fetching new data.")
+        fetch_and_cache_data()
     
-    # Check if cache is valid
-    if _fpl_data_cache["data"] is None or (current_time - _fpl_data_cache["timestamp"]) > CACHE_TTL:
-        # Cache expired or not initialized, fetch fresh data
-        if not _fpl_data_cache["is_refreshing"]:  # Only if not already refreshing
-            await refresh_fpl_data_cache()
-    
-    # Initialize background refresh task if not already started
-    if _fpl_data_cache["refresh_task"] is None:
-        await initialize_fpl_data_cache()
-    
-    # Return cached data (even if it's being refreshed, return the existing data)
-    return _fpl_data_cache["data"] if _fpl_data_cache["data"] else await fetch_fpl_data_directly()
-
-async def fetch_fpl_data_directly():
-    """Direct fetch from API when cache is not available"""
-    async with httpx.AsyncClient() as client:
-        # Fetch general data (includes players, teams, etc.)
-        bootstrap_response = await client.get(FPL_BOOTSTRAP_URL)
-        bootstrap_response.raise_for_status()
-        bootstrap_data = bootstrap_response.json()
-        
-        # Get team name mapping for easier reference
-        teams = {team["id"]: team["name"] for team in bootstrap_data["teams"]}
-        
-        # Process injury data
-        injured_players = []
-        for p in bootstrap_data["elements"]:
-            if p["status"] not in ["a", "u"]:  # Not available or unknown
-                injured_players.append({
-                    "id": p["id"],
-                    "player": f"{p['first_name']} {p['second_name']}",
-                    "web_name": p["web_name"],
-                    "team": teams.get(p["team"], "Unknown"),
-                    "team_id": p["team"],
-                    "status": p["status"],
-                    "news": p["news"],
-                    "chance_of_playing": p["chance_of_playing_next_round"]
-                })
-        
-        # Fetch fixture data
-        fixtures_response = await client.get(FPL_FIXTURES_URL)
-        fixtures_response.raise_for_status()
-        fixtures_data = fixtures_response.json()
-        
-        # Return combined data including injuries
-        return {
-            "bootstrap": bootstrap_data,
-            "fixtures": fixtures_data,
-            "injuries": injured_players
-        }
-
-def is_player_injured(player_id, injuries_data):
-    """Check if a player is injured based on player ID"""
-    return any(p["id"] == player_id for p in injuries_data)
+    # Return the cached data
+    return fpl_cache.data
